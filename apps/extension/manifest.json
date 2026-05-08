@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Hype2Profit Visible Scanner",
+  "version": "0.1.0",
+  "description": "Read only visible marketplace data from the current page and send it to Hype2Profit.",
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "tabs"],
+  "host_permissions": ["http://localhost:3000/*", "http://127.0.0.1:3000/*"],
+  "background": {
+    "service_worker": "dist/assets/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "dist/src/popup/index.html"
+  },
+  "side_panel": {
+    "default_path": "dist/src/sidepanel/index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.shopee.co.id/*",
+        "*://*.tokopedia.com/*",
+        "*://*.tiktok.com/*"
+      ],
+      "js": ["dist/assets/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

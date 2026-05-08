@@ -1,0 +1,19 @@
+{
+  "name": "hype2profit",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.11.0",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @hype2profit/web dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "seed": "pnpm --filter @hype2profit/database seed",
+    "extension:dev": "pnpm --filter @hype2profit/extension dev",
+    "extension:build": "pnpm --filter @hype2profit/extension build"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@hype2profit/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "seed": "node -e \"console.log('Apply supabase/seed.sql with Supabase SQL editor or psql.')\""
+  }
+}
