@@ -78,3 +78,9 @@ Kalau Supabase belum aktif, tenang, app tetap jalan pakai mock data.
 ## Deploy
 - Web siap deploy ke Vercel
 - Extension install sebagai unpacked dari `apps/extension` setelah `pnpm extension:build`
+
+## Baca Sebelum Lanjut Development
+- [CHANGELOG.md](/Users/adith92/Documents/Codex/hype2profit/CHANGELOG.md)
+- [docs/FUTURE_DEVELOPMENT.md](/Users/adith92/Documents/Codex/hype2profit/docs/FUTURE_DEVELOPMENT.md)
+- [docs/DATA_POLICY.md](/Users/adith92/Documents/Codex/hype2profit/docs/DATA_POLICY.md)
+- [docs/RISK_MATRIX.md](/Users/adith92/Documents/Codex/hype2profit/docs/RISK_MATRIX.md)

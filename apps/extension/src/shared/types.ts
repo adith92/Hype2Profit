@@ -14,6 +14,7 @@ export interface VisibleProductCard {
   url?: string;
   normalizedUrl?: string;
   extractionConfidence?: number;
+  confidenceScore?: number;
 }
 
 export interface ScanPayload {

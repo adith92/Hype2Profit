@@ -28,8 +28,11 @@ Body JSON:
 { "productId": "prod_001", "notes": "uji kecil di niche Ramadan" }
 ```
 
+## `GET /api/watchlist`
+Mengembalikan watchlist dari Supabase bila env tersedia, fallback ke mock jika belum.
+
 ## `DELETE /api/watchlist/:id`
-Menghapus produk dari watchlist in-memory prototype.
+Menghapus item watchlist by id (Supabase) atau by product id (fallback mock).
 
 ## `GET /api/stores/analyze`
 Query:
@@ -41,3 +44,12 @@ Query optional: `kind=products|trending|competitors|watchlist`
 
 ## `POST /api/extension/ingest`
 Menerima visible DOM payload dari extension.
+
+## `GET /api/exports`
+Mengembalikan riwayat export jobs.
+
+## `POST /api/exports`
+Membuat export job baru.
+
+## `POST /api/social/search`
+Mencari social conversation signal berbasis provider (default mock).

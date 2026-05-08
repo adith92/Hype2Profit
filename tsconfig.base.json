@@ -15,6 +15,8 @@
       "@hype2profit/shared": ["packages/shared/src"],
       "@hype2profit/scoring-engine": ["packages/scoring-engine/src"],
       "@hype2profit/marketplace-adapters": ["packages/marketplace-adapters/src"],
+      "@hype2profit/social-intelligence": ["packages/social-intelligence/src"],
+      "@hype2profit/social-adapters": ["packages/social-adapters/src"],
       "@hype2profit/database": ["packages/database/src"],
       "@hype2profit/ui": ["packages/ui/src"]
     }

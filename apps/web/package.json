@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@hype2profit/marketplace-adapters": "workspace:*",
+    "@hype2profit/social-adapters": "workspace:*",
+    "@hype2profit/social-intelligence": "workspace:*",
     "@hype2profit/scoring-engine": "workspace:*",
     "@hype2profit/shared": "workspace:*",
     "@supabase/supabase-js": "^2.49.8",

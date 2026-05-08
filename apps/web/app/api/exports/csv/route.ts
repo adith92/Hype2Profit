@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildProductCsv } from "@/lib/csv";
-import { createExportJob } from "@/lib/mock-service";
+import { createPersistedExportJob } from "@/lib/persistence";
 
-export function POST(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const kind = request.nextUrl.searchParams.get("kind") ?? "products";
-  createExportJob(kind);
+  await createPersistedExportJob(kind);
   return buildProductCsv(kind as "products" | "trending" | "watchlist" | "competitors").then((data) => NextResponse.json({ data }));
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const kind = (request.nextUrl.searchParams.get("kind") ?? "products") as "products" | "trending" | "watchlist" | "competitors";
-  createExportJob(kind);
+  await createPersistedExportJob(kind);
   return buildProductCsv(kind).then(({ csv, fileName }) =>
     new NextResponse(csv, {
       headers: {

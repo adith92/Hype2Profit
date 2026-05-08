@@ -1,0 +1,19 @@
+{
+  "name": "@hype2profit/social-adapters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "pnpm exec vitest run"
+  },
+  "dependencies": {
+    "@hype2profit/social-intelligence": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "vitest": "^2.1.9"
+  }
+}
