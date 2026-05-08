@@ -10,11 +10,12 @@ Fokus V1 kita sengaja tajam: Shopee dulu, Tokopedia nyusul, extension scanner da
 - `packages/scoring-engine` = logic score + candle momentum
 - `packages/marketplace-adapters` = adapter mock + adapter extension
 - `supabase` = migration + seed
-- `docs` = PRD, phase, contract API, policy, risk, dan future development tracker
+- `docs` = PRD, phase, contract API, policy, risk, developer notes, dan future development tracker
 
 ## Baca Sebelum Lanjut Development
 - `CHANGELOG.md` = catatan versi bertahap
 - `docs/FUTURE_DEVELOPMENT.md` = roadmap hidup, status fitur, dan rencana berikutnya
+- `docs/DEVELOPER_NOTES.md` = catatan teknis buat dev, Codex, dan ChatGPT berikutnya
 - `docs/DATA_POLICY.md` = batasan data dan safety
 - `docs/RISK_MATRIX.md` = risiko produk dan mitigasi
 
