@@ -28,22 +28,6 @@ Bukan cuma “lihat produk laku”, tapi **nangkep sinyal sebelum pasar keburu p
 
 ---
 
-## 🧠 GitHub About / Description
-
-Kalau mau isi bagian **About** repo GitHub, pakai ini:
-
-```txt
-Marketplace + social commerce intelligence cockpit for Indonesia. Track product hype, competitor moves, watchlists, extension scans, and future social trend signals. 🚀📈💰
-```
-
-Suggested topics:
-
-```txt
-marketplace-research, ecommerce, shopee, tokopedia, tiktok-shop, social-commerce, product-research, trend-analysis, nextjs, chrome-extension, supabase, typescript
-```
-
----
-
 ## 🗂️ Isi Repo
 
 ```txt
