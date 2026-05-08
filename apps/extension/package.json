@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "vite build",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "pnpm exec vitest run"
   },
   "dependencies": {
     "@hype2profit/shared": "workspace:*"
@@ -20,6 +21,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^2.1.9"
   }
 }

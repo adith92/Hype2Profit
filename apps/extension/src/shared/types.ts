@@ -4,11 +4,16 @@ export interface VisibleProductCard {
   id: string;
   title?: string;
   price?: string;
+  priceValue?: number;
   sold?: string;
+  soldValue?: number;
   rating?: string;
+  ratingValue?: number;
   image?: string;
   shop?: string;
   url?: string;
+  normalizedUrl?: string;
+  extractionConfidence?: number;
 }
 
 export interface ScanPayload {
