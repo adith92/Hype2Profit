@@ -55,6 +55,22 @@ test("POST /api/extension/ingest rejects invalid payload", async ({ request }) =
   expect(payload.ok).toBe(false);
 });
 
+test("POST /api/social/search returns safe social result for Tas Padel", async ({ request }) => {
+  const response = await request.post("/api/social/search", {
+    data: {
+      category: "Fashion",
+      keyword: "Tas Padel",
+      source: "x"
+    }
+  });
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json();
+  expect(payload.ok).toBe(true);
+  expect(payload.data.summary.relatedKeywords).toContain("tas padel");
+  expect(JSON.stringify(payload)).not.toContain("XAI_API_KEY");
+  expect(JSON.stringify(payload)).not.toContain("X_BEARER_TOKEN");
+});
+
 test("watchlist API add/remove behavior works", async ({ request }) => {
   const addResponse = await request.post("/api/watchlist", {
     data: {
