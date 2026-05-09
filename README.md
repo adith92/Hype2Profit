@@ -79,6 +79,12 @@ Kalau Supabase belum aktif, tenang, app tetap jalan pakai mock data.
 - Web siap deploy ke Vercel
 - Extension install sebagai unpacked dari `apps/extension` setelah `pnpm extension:build`
 
+## 🚀 Deploy Murah
+- Rekomendasi paling hemat: **Vercel Free + Supabase Free**
+- Panduan lengkap step-by-step ada di [docs/DEPLOYMENT.md](/Users/adith92/Documents/Codex/hype2profit/docs/DEPLOYMENT.md)
+- Shared hosting/cPanel kurang ideal buat app utama kecuali support Node.js + Next.js production
+- Domain sendiri bisa langsung diarahkan ke Vercel kalau sudah siap
+
 ## Baca Sebelum Lanjut Development
 - [CHANGELOG.md](/Users/adith92/Documents/Codex/hype2profit/CHANGELOG.md)
 - [docs/FUTURE_DEVELOPMENT.md](/Users/adith92/Documents/Codex/hype2profit/docs/FUTURE_DEVELOPMENT.md)

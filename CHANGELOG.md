@@ -19,6 +19,21 @@
 - xAI/Grok provider is stub-only until official integration is implemented.
 - Social metrics are sampled/estimated mock signals for now.
 
+## [0.1.3] - 2026-05-09
+### Added
+- Added Vercel deployment config (`apps/web/vercel.json`).
+- Added deployment guide docs (`docs/DEPLOYMENT.md`).
+- Added Node version hints (`.node-version`, `.nvmrc`, package `engines`).
+- Added env docs for deployment and optional social provider vars.
+
+### Changed
+- README now includes cheap deployment recommendation and direct link ke panduan deploy.
+- Added deployment notes for future contributor/Codex sessions in `docs/DEVELOPER_NOTES.md`.
+
+### Notes
+- Recommended hosting: Vercel Free + Supabase Free.
+- Shared hosting/cPanel only if it supports Node.js/Next.js production.
+
 ## [0.1.1] - 2026-05-09
 ### Added
 - Project memory docs baseline in-repo for future Codex continuation.

@@ -15,6 +15,15 @@ Hype2Profit diarahkan sebagai **“TradingView for marketplace product research 
 - Extension scanner visible-DOM sudah jalan (Shopee/Tokopedia/basic TikTok area).
 - Core persistence mulai dibangun (session/item ingest + watchlist + export job layer).
 - Social Signal Engine masih mock-first (provider live belum aktif).
+- Deployment readiness untuk Vercel sudah disiapkan di repo, deploy final menunggu trigger dashboard/CLI owner.
+
+## v0.1.3 - Deployment Readiness 🟡 IN_PROGRESS
+- Vercel config: DONE
+- Deployment docs: DONE
+- Env docs: DONE
+- README deploy section: DONE
+- Extension production host reminder: DONE
+- Deploy production URL live: IN_PROGRESS (perlu akses/login project Vercel runtime)
 
 ## Version Roadmap
 - v0.1.0 Prototype Core: DONE
