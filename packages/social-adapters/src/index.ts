@@ -8,6 +8,46 @@ export interface SocialSearchProvider {
   search(params: SocialSearchParams): Promise<SocialSearchResult>;
 }
 
+type ProviderEnv = {
+  enabled: boolean;
+  configuredProvider: string | undefined;
+  xaiApiKey: string | undefined;
+  xBearerToken: string | undefined;
+};
+
+type ProviderDiagnostics = {
+  hasXaiApiKey: boolean;
+  hasXBearerToken: boolean;
+  maskedXaiApiKey: string | null;
+  maskedXBearerToken: string | null;
+};
+
+export function maskToken(token: string | undefined): string | null {
+  if (!token) return null;
+  if (token.length <= 10) return `${token.slice(0, 3)}...${token.slice(-2)}`;
+  return `${token.slice(0, 6)}...${token.slice(-4)}`;
+}
+
+function readProviderEnv(): ProviderEnv {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+  return {
+    enabled: env.ENABLE_SOCIAL_SEARCH !== "false",
+    configuredProvider: env.SOCIAL_SEARCH_PROVIDER?.toLowerCase(),
+    xaiApiKey: env.XAI_API_KEY,
+    xBearerToken: env.X_BEARER_TOKEN
+  };
+}
+
+export function getSocialProviderDiagnostics(): ProviderDiagnostics {
+  const env = readProviderEnv();
+  return {
+    hasXaiApiKey: Boolean(env.xaiApiKey),
+    hasXBearerToken: Boolean(env.xBearerToken),
+    maskedXaiApiKey: maskToken(env.xaiApiKey),
+    maskedXBearerToken: maskToken(env.xBearerToken)
+  };
+}
+
 class SourceMockProvider implements SocialSearchProvider {
   provider: SocialProviderId;
   source: SocialSource;
@@ -33,16 +73,44 @@ export class MockSocialSearchProvider extends SourceMockProvider {
 export class XaiGrokSocialSearchProvider implements SocialSearchProvider {
   provider: SocialProviderId = "xai_grok";
   source: SocialSource;
-  status: SocialProviderStatus = "planned";
+  status: SocialProviderStatus;
+  private readonly env: ProviderEnv;
+  private readonly diagnostics: ProviderDiagnostics;
 
-  constructor(source: SocialSource) {
+  constructor(source: SocialSource, env: ProviderEnv = readProviderEnv()) {
     this.source = source;
+    this.env = env;
+    this.diagnostics = getSocialProviderDiagnostics();
+    this.status = env.xaiApiKey ? "limited_mock" : "planned";
   }
 
-  async search(_params: SocialSearchParams): Promise<SocialSearchResult> {
-    throw new Error(
-      "xAI/Grok provider is configured but not implemented yet. Use mock provider or implement official API integration."
-    );
+  async search(params: SocialSearchParams): Promise<SocialSearchResult> {
+    const fallback = buildMockSocialResult({ ...params, source: this.source });
+
+    if (!this.env.enabled || !this.env.xaiApiKey) {
+      return fallback;
+    }
+
+    const summaryPrefix =
+      this.source === "x" || this.source === "combined_social" || this.source === "combined_all"
+        ? this.env.xBearerToken
+          ? "Env provider siap: XAI + X token terbaca."
+          : "Env provider siap sebagian: XAI key ada, X token belum ada."
+        : "Env provider siap: XAI key terbaca.";
+
+    return {
+      ...fallback,
+      providerStatus: "limited_mock",
+      summary: {
+        ...fallback.summary,
+        summary: `${summaryPrefix} Live provider belum diaktifkan, jadi response tetap pakai sampled mock signal untuk menjaga safety dan determinisme.`
+      }
+    };
+  }
+
+  // Intentionally internal only; never return this through API responses.
+  getMaskedDiagnostics(): ProviderDiagnostics {
+    return this.diagnostics;
   }
 }
 
@@ -106,16 +174,7 @@ function attachMarketplaceContext(result: SocialSearchResult): SocialSearchResul
   };
 }
 
-export function getSocialSearchProvider(params?: Pick<SocialSearchParams, "source" | "platform">): SocialSearchProvider {
-  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
-  const configured = env.SOCIAL_SEARCH_PROVIDER?.toLowerCase();
-  const enabled = env.ENABLE_SOCIAL_SEARCH;
-  const source = resolveSource(params);
-
-  if (configured === "xai_grok" && enabled !== "false" && env.XAI_API_KEY) {
-    return new XaiGrokSocialSearchProvider(source);
-  }
-
+function buildMockProviderForSource(source: SocialSource): SocialSearchProvider {
   if (source === "x") return new SourceMockProvider({ provider: "mock", source, status: "mock" });
   if (source === "instagram") return new SourceMockProvider({ provider: "meta_instagram", source, status: "limited_mock" });
   if (source === "facebook") return new SourceMockProvider({ provider: "meta_facebook", source, status: "limited_mock" });
@@ -130,4 +189,23 @@ export function getSocialSearchProvider(params?: Pick<SocialSearchParams, "sourc
       return attachMarketplaceContext(buildMockSocialResult({ ...searchParams, source }));
     }
   };
+}
+
+export function getSocialSearchProvider(params?: Pick<SocialSearchParams, "source" | "platform">): SocialSearchProvider {
+  const env = readProviderEnv();
+  const source = resolveSource(params);
+
+  if (!env.enabled) {
+    return buildMockProviderForSource(source);
+  }
+
+  if (env.configuredProvider === "xai_grok" && env.xaiApiKey) {
+    return new XaiGrokSocialSearchProvider(source, env);
+  }
+
+  if (env.configuredProvider === "x_api" && env.xBearerToken && source === "x") {
+    return new SourceMockProvider({ provider: "x_api", source, status: "limited_mock" });
+  }
+
+  return buildMockProviderForSource(source);
 }
