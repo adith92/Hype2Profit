@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MockSocialSearchProvider, XaiGrokSocialSearchProvider, getSocialProviderDiagnostics, getSocialSearchProvider, maskToken } from "./index";
+import { MockSocialSearchProvider, XApiSocialSearchProvider, XaiGrokSocialSearchProvider, getSocialProviderDiagnostics, getSocialSearchProvider, maskToken } from "./index";
 
 const originalEnv = {
   ENABLE_SOCIAL_SEARCH: process.env.ENABLE_SOCIAL_SEARCH,
@@ -91,5 +91,56 @@ describe("social adapters", () => {
     const result = await provider.search({ category: "Fashion", keyword: "Tas Padel", source: "x" });
     expect(result.summary.summary).not.toContain("abcdef1234567890");
     expect(result.summary.summary).not.toContain("zyxwvu9876543210");
+  });
+
+  it("x api provider falls back safely on permission failure", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const provider = new XApiSocialSearchProvider("x", {
+      enabled: true,
+      configuredProvider: "x_api",
+      xaiApiKey: undefined,
+      xBearerToken: "zyxwvu9876543210"
+    });
+
+    const result = await provider.search({ category: "Fashion", keyword: "Tas Padel", source: "x" });
+    expect(result.providerStatus).toBe("limited_mock");
+    expect(result.summary.summary).toContain("Tier atau permission X API belum cukup");
+  });
+
+  it("x api provider can combine live x posts with fallback social mix", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            id: "tweet-1",
+            text: "Tas padel lagi naik banget minggu ini",
+            author_id: "user-1",
+            created_at: "2026-05-09T02:00:00.000Z",
+            public_metrics: { like_count: 10, reply_count: 2, retweet_count: 1, quote_count: 0, impression_count: 120 }
+          }
+        ],
+        includes: {
+          users: [{ id: "user-1", username: "marketwatchid", name: "Market Watch ID" }]
+        }
+      })
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const provider = new XApiSocialSearchProvider("combined_social", {
+      enabled: true,
+      configuredProvider: "x_api",
+      xaiApiKey: undefined,
+      xBearerToken: "zyxwvu9876543210"
+    });
+
+    const result = await provider.search({ category: "Fashion", keyword: "Tas Padel", source: "combined_social" });
+    expect(result.mentions.some((mention) => mention.authorHandle === "@marketwatchid")).toBe(true);
+    expect(result.summary.summary).toContain("X Recent Search aktif");
   });
 });

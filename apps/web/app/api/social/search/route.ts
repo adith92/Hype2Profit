@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       source: provider.source,
       status: provider.status,
       data,
-      note: "Social metrics are sampled/estimated mock signals for now. Use them as research support, not absolute truth."
+      note: "Social metrics are sampled/estimated signals. Live providers may fall back to mock summaries when env, network, permission, or rate limits are not available."
     });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Failed social search" }, { status: 500 });

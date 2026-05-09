@@ -60,13 +60,15 @@ test("POST /api/social/search returns safe social result for Tas Padel", async (
     data: {
       category: "Fashion",
       keyword: "Tas Padel",
-      source: "x"
+      source: "combined_social",
+      timeframe: "7d"
     }
   });
   expect(response.ok()).toBeTruthy();
   const payload = await response.json();
   expect(payload.ok).toBe(true);
   expect(payload.data.summary.relatedKeywords).toContain("tas padel");
+  expect(payload.source).toBe("combined_social");
   expect(JSON.stringify(payload)).not.toContain("XAI_API_KEY");
   expect(JSON.stringify(payload)).not.toContain("X_BEARER_TOKEN");
 });
