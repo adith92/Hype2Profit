@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPersistedExportJob, getPersistedExportJobs } from "@/lib/persistence";
 
 export async function GET() {
-  const data = await getPersistedExportJobs();
-  return NextResponse.json({ ok: true, data });
+  const result = await getPersistedExportJobs();
+  return NextResponse.json({ ok: true, data: result.data, source: result.source, warning: result.warning });
 }
 
 export async function POST(request: NextRequest) {
@@ -11,6 +11,6 @@ export async function POST(request: NextRequest) {
   if (!body.kind) {
     return NextResponse.json({ ok: false, error: "kind is required" }, { status: 400 });
   }
-  const data = await createPersistedExportJob(body.kind, body.metadata);
-  return NextResponse.json({ ok: true, data });
+  const result = await createPersistedExportJob(body.kind, body.metadata);
+  return NextResponse.json({ ok: true, data: result.data, source: result.source, warning: result.warning });
 }
