@@ -7,17 +7,22 @@
 - Social Signal Engine scaffold (`packages/social-intelligence`) with deterministic mock data and scoring.
 - Social adapters scaffold (`packages/social-adapters`) with mock provider default and xAI/Grok stub.
 - Social search API (`POST /api/social/search`) and UI skeleton (`/social/search`).
+- Core persistence compatibility migration for older Supabase projects that already had the initial `export_jobs` table.
 
 ### Changed
 - Watchlist and export APIs now use persistence service with Supabase-or-mock fallback.
+- Watchlist and export API responses now expose `source` and `warning` so fallback state is visible to the UI/client.
 
 ### Fixed
 - Dependency reinstall flow to recover from corrupted node_modules baseline issues.
+- Hardened export job persistence for legacy Supabase schemas missing `metadata`, `file_url`, or `completed_at` columns.
+- Extension ingest now reports item insert warnings instead of silently hiding partial persistence failures.
 
 ### Known Gaps
 - Supabase env required for real persistence writes.
 - xAI/Grok provider is stub-only until official integration is implemented.
 - Social metrics are sampled/estimated mock signals for now.
+- RLS/per-user access hardening is still planned before private beta.
 
 ## [0.1.3] - 2026-05-09
 ### Added
