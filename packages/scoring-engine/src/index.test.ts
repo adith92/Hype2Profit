@@ -49,6 +49,10 @@ describe("scoring engine", () => {
     ).toBe("AVOID");
   });
 
+  it("returns WATCH for middle case", () => {
+    expect(calculateFinalSignal({ hypeScore: 63, profitScore: 50, riskScore: 50 })).toBe("WATCH");
+  });
+
   it("builds candles from snapshots sorted by capturedAt", () => {
     const unsorted = [...snapshots].reverse();
     const candles = calculateTrendCandles(unsorted, 3);
@@ -69,6 +73,12 @@ describe("scoring engine", () => {
     expect(first).toHaveProperty("volume");
     expect(first).toHaveProperty("movingAverage");
     expect(first.high).toBeGreaterThanOrEqual(first.low);
+  });
+
+  it("handles empty snapshots and interval buckets", () => {
+    expect(calculateTrendCandles([], 3)).toEqual([]);
+    const bucketed = calculateTrendCandles(snapshots.slice(0, 5), 2);
+    expect(bucketed.length).toBe(3);
   });
 
   it("keeps legacy valid-signal scenario", () => {

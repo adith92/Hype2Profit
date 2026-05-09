@@ -7,8 +7,8 @@ const SOLD_MULTIPLIER: Record<string, number> = {
   juta: 1_000_000
 };
 
-export function parseIndonesianPrice(text?: string): number {
-  if (!text) return 0;
+export function parseIndonesianPrice(text?: string): number | null {
+  if (!text) return null;
   const source = text.toLowerCase();
   const priceMultiplier = source.includes("jt") || source.includes("juta") ? 1_000_000 : source.includes("rb") || source.includes("ribu") ? 1_000 : 1;
   const normalized = text
@@ -16,7 +16,12 @@ export function parseIndonesianPrice(text?: string): number {
     .replace(/rp/gi, "")
     .replace(/\s+/g, "")
     .replace(/[^\d.,]/g, "");
-  if (!normalized) return 0;
+  if (!normalized) return null;
+  if (priceMultiplier > 1) {
+    const compact = normalized.replace(",", ".").replace(/[^0-9.]/g, "");
+    const scaled = Number(compact);
+    return Number.isFinite(scaled) ? Math.round(scaled * priceMultiplier) : null;
+  }
 
   const hasComma = normalized.includes(",");
   const hasDot = normalized.includes(".");
@@ -26,19 +31,19 @@ export function parseIndonesianPrice(text?: string): number {
   else numeric = normalized.replace(/\./g, "");
 
   const parsed = Number(numeric);
-  if (!Number.isFinite(parsed)) return 0;
-  if (priceMultiplier > 1) return Math.round(parsed * priceMultiplier);
+  if (!Number.isFinite(parsed)) return null;
   return parsed < 1000 && (hasComma || hasDot) ? Math.round(parsed * 1000) : Math.round(parsed);
 }
 
-export function parseSoldCount(text?: string): number {
-  if (!text) return 0;
+export function parseSoldCount(text?: string): number | null {
+  if (!text) return null;
   const source = text.toLowerCase().replace(/\+/g, "").trim();
-  const matched = source.match(/(\d+(?:[.,]\d+)?)\s*(rb|ribu|jt|juta)?/i);
-  if (!matched) return 0;
+  const matched = source.match(/(\d+(?:[.,]\d+)?)\s*(rb|ribu|jt|juta|k|m)?/i);
+  if (!matched) return null;
   const base = Number(matched[1].replace(",", "."));
-  if (!Number.isFinite(base)) return 0;
-  const multiplier = SOLD_MULTIPLIER[matched[2]?.toLowerCase() ?? ""] ?? 1;
+  if (!Number.isFinite(base)) return null;
+  const unit = matched[2]?.toLowerCase() ?? "";
+  const multiplier = unit === "k" ? 1_000 : unit === "m" ? 1_000_000 : SOLD_MULTIPLIER[unit] ?? 1;
   return Math.round(base * multiplier);
 }
 
@@ -62,12 +67,11 @@ export function normalizeMarketplaceUrl(url?: string): string | undefined {
 
 export function calculateExtractionConfidence(card: VisibleProductCard): number {
   let score = 0;
-  if (card.title && card.title.length > 8) score += 0.28;
-  if (card.price && (card.priceValue ?? 0) > 0) score += 0.22;
-  if (card.sold && (card.soldValue ?? 0) >= 0) score += 0.15;
-  if (card.rating && (card.ratingValue ?? 0) > 0) score += 0.1;
-  if (card.image && /^https?:\/\//i.test(card.image)) score += 0.1;
-  if (card.shop) score += 0.05;
-  if (card.url || card.normalizedUrl) score += 0.1;
-  return Math.min(1, Number(score.toFixed(2)));
+  if (card.title && card.title.length > 8) score += 22;
+  if (card.price && (card.priceValue ?? 0) > 0) score += 20;
+  if (card.url || card.normalizedUrl) score += 18;
+  if (card.image && /^https?:\/\//i.test(card.image)) score += 15;
+  if (card.sold && (card.soldValue ?? 0) >= 0) score += 13;
+  if (card.rating && (card.ratingValue ?? 0) > 0) score += 12;
+  return Math.min(100, Math.max(0, Math.round(score)));
 }

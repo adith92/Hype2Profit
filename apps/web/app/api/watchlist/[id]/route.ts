@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { removeFromWatchlist } from "@/lib/mock-service";
-import { getSupabaseServerClient } from "@/lib/supabase";
+import { removeWatchlistItem } from "@/lib/persistence";
 
 export async function DELETE(_: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const supabase = getSupabaseServerClient();
-  if (!supabase) {
-    return NextResponse.json({ data: removeFromWatchlist(id), source: "mock" });
+  try {
+    const data = await removeWatchlistItem(id);
+    return NextResponse.json({ ok: true, data });
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Failed to delete watchlist item" }, { status: 500 });
   }
-  const { error } = await supabase.from("watchlist_items").delete().eq("id", id);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ ok: true, id, source: "supabase" });
 }

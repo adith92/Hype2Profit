@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MockShopeeAdapter, MockTokopediaAdapter, adapters, getTrendingProducts } from "./index";
+import { MockShopeeAdapter, MockTikTokShopAdapter, MockTokopediaAdapter, adapters, getTrendingProducts } from "./index";
 
 describe("mock marketplace adapters", () => {
   it("MockShopeeAdapter.searchProducts filters by keyword", async () => {
@@ -15,6 +15,12 @@ describe("mock marketplace adapters", () => {
     const results = await adapter.searchProducts({ keyword: "", platform: "tokopedia" });
     expect(results.length).toBeGreaterThan(0);
     expect(results.every((product) => product.platform === "tokopedia")).toBe(true);
+  });
+
+  it("MockTikTokShopAdapter behaves as safe placeholder", async () => {
+    const adapter = new MockTikTokShopAdapter();
+    const results = await adapter.searchProducts({ keyword: "", platform: "tiktok_shop" });
+    expect(results.every((product) => product.platform === "tiktok_shop")).toBe(true);
   });
 
   it("getTrendingProducts sorts by finalScore descending", () => {

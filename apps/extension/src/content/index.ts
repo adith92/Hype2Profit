@@ -88,8 +88,8 @@ function extractCards(): VisibleProductCard[] {
       ]);
       const rawUrl = (root as HTMLAnchorElement).href || (root.querySelector("a[href]") as HTMLAnchorElement | null)?.href || undefined;
       const normalizedUrl = normalizeMarketplaceUrl(rawUrl);
-      const priceValue = parseIndonesianPrice(price);
-      const soldValue = parseSoldCount(sold);
+      const priceValue = parseIndonesianPrice(price) ?? 0;
+      const soldValue = parseSoldCount(sold) ?? 0;
       const ratingValue = Number((rating ?? "").replace(",", ".").replace(/[^\d.]/g, "")) || 0;
 
       const card: VisibleProductCard = {
@@ -107,6 +107,7 @@ function extractCards(): VisibleProductCard[] {
         normalizedUrl
       };
       card.extractionConfidence = calculateExtractionConfidence(card);
+      card.confidenceScore = card.extractionConfidence;
       return card;
     })
     .filter((card) => Boolean(card.title || card.price || card.url));

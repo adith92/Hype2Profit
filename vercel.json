@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @hype2profit/web build",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs"
+}

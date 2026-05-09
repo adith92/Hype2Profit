@@ -1,101 +1,49 @@
-# Changelog 📜🚀
-
-Semua perubahan penting Hype2Profit dicatat di sini.
-
-Format mengikuti versi bertahap supaya Codex, ChatGPT, dan developer lain bisa membaca progres proyek tanpa perlu konteks chat lama.
-
----
+# Changelog
 
 ## [Unreleased]
+### Added
+- Core persistence foundation migration and service layer scaffold for extension scans, watchlist, and export jobs.
+- Extension ingest payload validation with persistence response (`persisted`, `sessionId`, `received`).
+- Social Signal Engine scaffold (`packages/social-intelligence`) with deterministic mock data and scoring.
+- Social adapters scaffold (`packages/social-adapters`) with mock provider default and xAI/Grok stub.
+- Social search API (`POST /api/social/search`) and UI skeleton (`/social/search`).
 
-### Planned 🔜
+### Changed
+- Watchlist and export APIs now use persistence service with Supabase-or-mock fallback.
 
-- Social Signal Engine / Internal Social Search untuk membaca percakapan publik sosial media berdasarkan kategori + keyword produk.
-- Provider abstraction untuk social search: `mock`, `xai_grok`, `x_api`, dan `manual_import`.
-- Supabase persistence untuk extension scan, watchlist, dan export jobs.
-- Parser harga dan sold count Indonesia untuk Chrome Extension.
-- Profit Intelligence melalui CSV supplier cost import dan margin calculator.
-- Alerts & Intelligence Brief untuk ringkasan peluang mingguan.
+### Fixed
+- Dependency reinstall flow to recover from corrupted node_modules baseline issues.
 
-### Blocked / Needs Decision ⛔
+### Known Gaps
+- Supabase env required for real persistence writes.
+- xAI/Grok provider is stub-only until official integration is implemented.
+- Social metrics are sampled/estimated mock signals for now.
 
-- Keputusan API provider sosial media utama:
-  - Grok / xAI sebagai optional provider.
-  - X API sebagai provider langsung jika butuh kontrol query lebih detail.
-  - Provider lain untuk TikTok, Instagram, YouTube, atau Google Trends perlu riset legal/API terpisah.
+## [0.1.3] - 2026-05-09
+### Added
+- Added Vercel deployment config (`apps/web/vercel.json`).
+- Added root Vercel CLI config for project `hype2profit`.
+- Added deployment guide docs (`docs/DEPLOYMENT.md`).
+- Added Node version hints (`.node-version`, `.nvmrc`, package `engines`).
+- Added env docs for deployment and optional social provider vars.
+- Added production host permission for Chrome extension: `https://hype2profit.vercel.app/*`.
 
----
+### Changed
+- README now includes cheap deployment recommendation and direct link ke panduan deploy.
+- Added deployment notes for future contributor/Codex sessions in `docs/DEVELOPER_NOTES.md`.
+- Updated Vercel target to Node `20.x`.
+- Upgraded Next.js to `16.2.6` and forced webpack build mode to avoid Turbopack build issues in this environment.
 
-## [0.1.2] - 2026-05-09
+### Notes
+- Recommended hosting: Vercel Free + Supabase Free.
+- Shared hosting/cPanel only if it supports Node.js/Next.js production.
+- Production URL: https://hype2profit.vercel.app
+- Old temporary Vercel project `web` can be ignored/deleted manually.
 
-### Added ✅
+## [0.1.1] - 2026-05-09
+### Added
+- Project memory docs baseline in-repo for future Codex continuation.
 
-- README dibuat lebih rame, lebih gaul, dan lebih friendly buat investor/dev/Codex.
-- Added GitHub About description suggestion di README.
-- Added stronger product positioning: marketplace + social commerce intelligence cockpit.
-- Added future direction section untuk Social Signal Engine.
-- Added developer flow dan safety summary di README.
-
-### Changed 🛠️
-
-- README sekarang lebih visual dengan emoji, badges, roadmap, route list, dan motto produk.
-
----
-
-## [0.1.1] - 2026-05-08
-
-### Added ✅
-
-- Added `docs/FUTURE_DEVELOPMENT.md` sebagai single source of truth untuk roadmap, status development, dan future ideas.
-- Added `docs/DEVELOPER_NOTES.md` sebagai catatan praktis untuk developer, Codex, dan ChatGPT berikutnya.
-- Added staged version roadmap dari `v0.1.0` sampai `v1.0.0`.
-- Added Social Signal Engine plan untuk fitur internal social search.
-- Added recommendation bahwa Grok/xAI dipakai sebagai optional provider, bukan hard dependency.
-- Added Codex continuation prompt di future development docs.
-
-### Changed 🛠️
-
-- Roadmap sekarang dipisahkan lebih jelas menjadi:
-  - `v0.2.0` Core Persistence
-  - `v0.3.0` Extension Reliability
-  - `v0.4.0` Social Signal Engine
-  - `v0.5.0` Profit Intelligence
-  - `v0.6.0` Alerts & Intelligence Brief
-  - `v1.0.0` Private Beta / Paid MVP
-
----
-
-## [0.1.0] - Prototype Core
-
-### Added ✅
-
-- Initial PNPM monorepo.
-- Next.js web dashboard.
-- Chrome Extension MV3 visible page scanner.
-- Shared product and marketplace types.
-- Mock marketplace data.
-- Marketplace adapters for Shopee, Tokopedia, TikTok Shop placeholder, and extension payloads.
-- Scoring engine:
-  - Hype Score
-  - Profit Score
-  - Risk Score
-  - Final Signal: `BUY_TEST`, `WATCH`, `AVOID`
-- Dashboard pages:
-  - Dashboard
-  - Scanner
-  - Trending
-  - Competitors
-  - Watchlist
-  - Exports
-  - Pricing
-  - Settings
-- API routes for product data and extension ingest prototype.
-- Data policy and risk matrix docs.
-
-### Known Gaps 🕳️
-
-- Extension ingest perlu terus dipastikan persist ke Supabase secara stabil.
-- Watchlist perlu per-user persistence yang lebih matang.
-- Export job perlu real persisted export dan downloadable file.
-- Social search belum diimplementasikan penuh.
-- Auth/per-user data belum production-ready.
+## [0.1.0] - 2026-05-08
+### Added
+- Initial V1 prototype for Hype2Profit web dashboard and Chrome extension.
