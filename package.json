@@ -3,9 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "engines": {
-    "node": ">=20 <23"
+    "node": "20.x"
   },
   "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "next": "16.2.6"
+  },
   "devDependencies": {
     "typescript": "^5.8.3"
   },

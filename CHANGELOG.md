@@ -22,17 +22,23 @@
 ## [0.1.3] - 2026-05-09
 ### Added
 - Added Vercel deployment config (`apps/web/vercel.json`).
+- Added root Vercel CLI config for project `hype2profit`.
 - Added deployment guide docs (`docs/DEPLOYMENT.md`).
 - Added Node version hints (`.node-version`, `.nvmrc`, package `engines`).
 - Added env docs for deployment and optional social provider vars.
+- Added production host permission for Chrome extension: `https://hype2profit.vercel.app/*`.
 
 ### Changed
 - README now includes cheap deployment recommendation and direct link ke panduan deploy.
 - Added deployment notes for future contributor/Codex sessions in `docs/DEVELOPER_NOTES.md`.
+- Updated Vercel target to Node `20.x`.
+- Upgraded Next.js to `16.2.6` and forced webpack build mode to avoid Turbopack build issues in this environment.
 
 ### Notes
 - Recommended hosting: Vercel Free + Supabase Free.
 - Shared hosting/cPanel only if it supports Node.js/Next.js production.
+- Production URL: https://hype2profit.vercel.app
+- Old temporary Vercel project `web` can be ignored/deleted manually.
 
 ## [0.1.1] - 2026-05-09
 ### Added

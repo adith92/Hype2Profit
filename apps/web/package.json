@@ -2,19 +2,22 @@
   "name": "@hype2profit/web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "lint": "eslint .",
     "typecheck": "rm -rf .next/types && tsc --project tsconfig.json --noEmit",
     "test": "next build && playwright test"
   },
   "dependencies": {
     "@hype2profit/marketplace-adapters": "workspace:*",
-    "@hype2profit/social-adapters": "workspace:*",
-    "@hype2profit/social-intelligence": "workspace:*",
     "@hype2profit/scoring-engine": "workspace:*",
     "@hype2profit/shared": "workspace:*",
+    "@hype2profit/social-adapters": "workspace:*",
+    "@hype2profit/social-intelligence": "workspace:*",
     "@supabase/supabase-js": "^2.49.8",
     "@tanstack/react-query": "^5.66.9",
     "@tanstack/react-table": "^8.21.2",
@@ -24,7 +27,7 @@
     "framer-motion": "^12.6.3",
     "lightweight-charts": "^5.0.6",
     "lucide-react": "^0.511.0",
-    "next": "15.3.2",
+    "next": "16.2.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "recharts": "^2.15.1",

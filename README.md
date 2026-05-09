@@ -76,7 +76,8 @@ Kalau Supabase belum aktif, tenang, app tetap jalan pakai mock data.
 - Semua angka sales/revenue/views/signal di V1 = estimasi
 
 ## Deploy
-- Web siap deploy ke Vercel
+- Web production: https://hype2profit.vercel.app
+- Vercel project name: `hype2profit`
 - Extension install sebagai unpacked dari `apps/extension` setelah `pnpm extension:build`
 
 ## 🚀 Deploy Murah
@@ -84,6 +85,7 @@ Kalau Supabase belum aktif, tenang, app tetap jalan pakai mock data.
 - Panduan lengkap step-by-step ada di [docs/DEPLOYMENT.md](/Users/adith92/Documents/Codex/hype2profit/docs/DEPLOYMENT.md)
 - Shared hosting/cPanel kurang ideal buat app utama kecuali support Node.js + Next.js production
 - Domain sendiri bisa langsung diarahkan ke Vercel kalau sudah siap
+- Project Vercel lama bernama `web` bisa diabaikan atau dihapus manual dari dashboard Vercel
 
 ## Baca Sebelum Lanjut Development
 - [CHANGELOG.md](/Users/adith92/Documents/Codex/hype2profit/CHANGELOG.md)

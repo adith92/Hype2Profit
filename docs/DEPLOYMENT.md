@@ -9,7 +9,23 @@
 ## 2. Setup Vercel via dashboard
 1. Login ke Vercel, klik `Add New Project`.
 2. Import repo `adith92/Hype2Profit`.
-3. Set `Root Directory` ke `apps/web`.
+3. Project name: `hype2profit`.
+4. Production URL target: `https://hype2profit.vercel.app`.
+5. Untuk CLI root deploy, pakai root `vercel.json`:
+- Install Command: `pnpm install --frozen-lockfile`
+- Build Command: `pnpm --filter @hype2profit/web build`
+- Output Directory: `apps/web/.next`
+6. Kalau import dashboard pakai Root Directory `apps/web`, pakai config ini:
+- Root Directory: `apps/web`
+- Install Command: `cd ../.. && pnpm install --frozen-lockfile && cd apps/web`
+- Build Command: `pnpm build`
+- Output Directory: `.next`
+7. Framework preset: Next.js.
+
+Temporary old project:
+- Project Vercel lama bernama `web` bisa diabaikan atau dihapus manual dari dashboard.
+
+Legacy dashboard config:
 4. Set config build:
 - Install Command: `cd ../.. && pnpm install --frozen-lockfile && cd apps/web`
 - Build Command: `pnpm build`
@@ -43,10 +59,11 @@ Isi di Vercel Project Settings → Environment Variables:
 
 ## 6. Chrome extension setelah deploy
 1. Build ulang extension: `pnpm extension:build`.
-2. Karena domain production belum fix sekarang, nanti update `host_permissions` di manifest:
-- `"https://YOUR-VERCEL-DOMAIN.vercel.app/*"`
+2. Production host sudah ditambahkan:
+- `"https://hype2profit.vercel.app/*"`
+3. Kalau pakai custom domain nanti, tambahkan juga:
 - `"https://YOUR-CUSTOM-DOMAIN/*"`
-3. Di popup extension, pastikan App URL diarahkan ke domain production.
+4. Di popup extension, pastikan App URL diarahkan ke domain production.
 
 ## 7. Deploy lewat CLI
 ```bash
