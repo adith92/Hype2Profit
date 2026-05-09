@@ -34,9 +34,27 @@ describe("social intelligence", () => {
   });
 
   it("mock data Fashion + Tas Padel contains hashtags and related keywords", () => {
-    const result = buildMockSocialResult({ category: "Fashion", keyword: "Tas Padel", timeframe: "7d" });
+    const result = buildMockSocialResult({ category: "Fashion", keyword: "Tas Padel", timeframe: "7d", source: "combined_social" });
     expect(result.summary.topHashtags.length).toBeGreaterThan(0);
     expect(result.summary.relatedKeywords).toContain("tas padel");
     expect(Number.isNaN(result.score.socialHypeScore)).toBe(false);
+  });
+
+  it("supports Beauty + Serum mock result", () => {
+    const result = buildMockSocialResult({ category: "Beauty", keyword: "Serum", source: "instagram" });
+    expect(result.summary.relatedKeywords).toContain("serum");
+    expect(result.mentions.every((mention) => mention.platform === "instagram")).toBe(true);
+  });
+
+  it("supports Gadget + Case iPhone mock result", () => {
+    const result = buildMockSocialResult({ category: "Gadget", keyword: "Case iPhone", source: "x" });
+    expect(result.summary.topHashtags).toContain("#caseiphone");
+    expect(result.score.buyerIntentScore).toBeGreaterThanOrEqual(0);
+  });
+
+  it("supports Home + Rak Dapur mock result", () => {
+    const result = buildMockSocialResult({ category: "Home", keyword: "Rak Dapur", source: "facebook" });
+    expect(result.summary.relatedKeywords).toContain("rak dapur");
+    expect(result.summary.riskSignals.length).toBeGreaterThan(0);
   });
 });

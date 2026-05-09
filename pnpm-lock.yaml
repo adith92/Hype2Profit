@@ -179,6 +179,9 @@ importers:
 
   packages/social-adapters:
     dependencies:
+      '@hype2profit/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@hype2profit/social-intelligence':
         specifier: workspace:*
         version: link:../social-intelligence

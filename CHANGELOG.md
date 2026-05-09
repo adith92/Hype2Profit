@@ -7,9 +7,13 @@
 - Social Signal Engine scaffold (`packages/social-intelligence`) with deterministic mock data and scoring.
 - Social adapters scaffold (`packages/social-adapters`) with mock provider default and xAI/Grok stub.
 - Social search API (`POST /api/social/search`) and UI skeleton (`/social/search`).
+- Social source selection foundation for scanner and social search: `X`, `Facebook`, `Instagram`, `Threads`, `Gabungan Social`, and `Gabungan Semua`.
+- Mock social scenarios for `Fashion + Tas Padel`, `Beauty + Serum`, `Gadget + Case iPhone`, and `Home + Rak Dapur`.
 
 ### Changed
 - Watchlist and export APIs now use persistence service with Supabase-or-mock fallback.
+- Scanner now groups sources into `Marketplace`, `Social`, and `Combined`, while keeping marketplace filters and table flow alive.
+- Social providers now expose `source`, `status`, and `search(params)` with mock-first behavior for all social channels.
 
 ### Fixed
 - Dependency reinstall flow to recover from corrupted node_modules baseline issues.
@@ -17,7 +21,7 @@
 ### Known Gaps
 - Supabase env required for real persistence writes.
 - xAI/Grok provider is stub-only until official integration is implemented.
-- Social metrics are sampled/estimated mock signals for now.
+- Social metrics are sampled/estimated mock signals for now, and no real external social APIs are called yet.
 
 ## [0.1.3] - 2026-05-09
 ### Added
