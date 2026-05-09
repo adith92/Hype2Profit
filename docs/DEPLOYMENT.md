@@ -44,7 +44,12 @@ Isi di Vercel Project Settings → Environment Variables:
 - `ENABLE_SOCIAL_SEARCH=false`
 - `SOCIAL_SEARCH_PROVIDER=mock`
 - `XAI_API_KEY` (opsional, belum wajib)
-- `X_API_KEY` (opsional)
+- `X_BEARER_TOKEN` (opsional, dipakai hanya kalau `SOCIAL_SEARCH_PROVIDER=x_api`)
+
+Catatan social provider:
+- `SOCIAL_SEARCH_PROVIDER=xai_grok` akan baca `XAI_API_KEY`, tapi saat ini tetap fallback aman ke mock summary kalau live synthesis belum aktif penuh.
+- `SOCIAL_SEARCH_PROVIDER=x_api` akan coba panggil endpoint official X Recent Search (`GET /2/tweets/search/recent`) pakai `X_BEARER_TOKEN`.
+- Kalau auth, tier, rate limit, atau network gagal, endpoint `/api/social/search` tetap balikin result aman dengan `providerStatus=limited_mock`.
 
 ## 4. Setup Supabase
 1. Bikin project Supabase baru.

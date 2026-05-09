@@ -22,6 +22,37 @@ type ProviderDiagnostics = {
   maskedXBearerToken: string | null;
 };
 
+type XRecentSearchResponse = {
+  data?: Array<{
+    id: string;
+    text: string;
+    author_id?: string;
+    created_at?: string;
+    public_metrics?: {
+      like_count?: number;
+      reply_count?: number;
+      retweet_count?: number;
+      quote_count?: number;
+      impression_count?: number;
+    };
+  }>;
+  includes?: {
+    users?: Array<{
+      id: string;
+      name?: string;
+      username?: string;
+    }>;
+  };
+  errors?: Array<{
+    title?: string;
+    detail?: string;
+    status?: number;
+  }>;
+  meta?: {
+    result_count?: number;
+  };
+};
+
 export function maskToken(token: string | undefined): string | null {
   if (!token) return null;
   if (token.length <= 10) return `${token.slice(0, 3)}...${token.slice(-2)}`;
@@ -45,6 +76,17 @@ export function getSocialProviderDiagnostics(): ProviderDiagnostics {
     hasXBearerToken: Boolean(env.xBearerToken),
     maskedXaiApiKey: maskToken(env.xaiApiKey),
     maskedXBearerToken: maskToken(env.xBearerToken)
+  };
+}
+
+function buildFallbackSummary(result: SocialSearchResult, providerLabel: string, reason: string, status: SocialProviderStatus): SocialSearchResult {
+  return {
+    ...result,
+    providerStatus: status,
+    summary: {
+      ...result.summary,
+      summary: `${providerLabel} fallback aktif. ${reason} Social result tetap pakai sampled mock signal supaya riset tetap jalan tanpa bikin flow crash.`
+    }
   };
 }
 
@@ -103,7 +145,7 @@ export class XaiGrokSocialSearchProvider implements SocialSearchProvider {
       providerStatus: "limited_mock",
       summary: {
         ...fallback.summary,
-        summary: `${summaryPrefix} Live provider belum diaktifkan, jadi response tetap pakai sampled mock signal untuk menjaga safety dan determinisme.`
+        summary: `${summaryPrefix} Live provider belum diaktifkan penuh, jadi response tetap pakai sampled mock signal untuk menjaga safety dan determinisme.`
       }
     };
   }
@@ -111,6 +153,97 @@ export class XaiGrokSocialSearchProvider implements SocialSearchProvider {
   // Intentionally internal only; never return this through API responses.
   getMaskedDiagnostics(): ProviderDiagnostics {
     return this.diagnostics;
+  }
+}
+
+export class XApiSocialSearchProvider implements SocialSearchProvider {
+  provider: SocialProviderId = "x_api";
+  source: SocialSource;
+  status: SocialProviderStatus = "limited_mock";
+  private readonly env: ProviderEnv;
+
+  constructor(source: SocialSource, env: ProviderEnv = readProviderEnv()) {
+    this.source = source;
+    this.env = env;
+  }
+
+  async search(params: SocialSearchParams): Promise<SocialSearchResult> {
+    const fallback = buildMockSocialResult({ ...params, source: this.source === "x" ? "x" : "combined_social" });
+
+    if (!this.env.enabled || !this.env.xBearerToken) {
+      return buildFallbackSummary(fallback, "X API", "Bearer token belum tersedia di runtime.", "limited_mock");
+    }
+
+    try {
+      const query = `${params.keyword} lang:id -is:retweet`;
+      const url = new URL("https://api.x.com/2/tweets/search/recent");
+      url.searchParams.set("query", query);
+      url.searchParams.set("max_results", "10");
+      url.searchParams.set("tweet.fields", "author_id,created_at,public_metrics");
+      url.searchParams.set("expansions", "author_id");
+      url.searchParams.set("user.fields", "name,username");
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${this.env.xBearerToken}`
+        },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        const reason =
+          response.status === 401
+            ? "Auth X API ditolak."
+            : response.status === 403
+              ? "Tier atau permission X API belum cukup."
+              : response.status === 429
+                ? "Rate limit X API kena."
+                : `Request X API gagal dengan status ${response.status}.`;
+        return buildFallbackSummary(fallback, "X API", reason, "limited_mock");
+      }
+
+      const payload = (await response.json()) as XRecentSearchResponse;
+      if (!payload.data?.length) {
+        return buildFallbackSummary(fallback, "X API", "Recent Search tidak mengembalikan post yang relevan.", "limited_mock");
+      }
+
+      const userMap = new Map((payload.includes?.users ?? []).map((user) => [user.id, user]));
+      const liveMentions = payload.data.map((post) => {
+        const user = post.author_id ? userMap.get(post.author_id) : undefined;
+        const metrics = post.public_metrics;
+        return {
+          id: post.id,
+          platform: "x" as const,
+          authorName: user?.name,
+          authorHandle: user?.username ? `@${user.username}` : undefined,
+          text: post.text,
+          url: `https://x.com/${user?.username ?? "i"}/status/${post.id}`,
+          publishedAt: post.created_at ?? new Date().toISOString(),
+          likeCount: metrics?.like_count ?? 0,
+          commentCount: metrics?.reply_count ?? 0,
+          shareCount: (metrics?.retweet_count ?? 0) + (metrics?.quote_count ?? 0),
+          viewCount: metrics?.impression_count,
+          sentiment: "neutral" as const,
+          intent: "trend" as const,
+          hashtags: fallback.summary.topHashtags,
+          keywords: fallback.summary.relatedKeywords
+        };
+      });
+
+      return {
+        ...fallback,
+        params: { ...params, source: this.source },
+        mentions: this.source === "combined_social" || this.source === "combined_all" ? [...liveMentions, ...fallback.mentions.filter((mention) => mention.platform !== "x")] : liveMentions,
+        providerStatus: "limited_mock",
+        summary: {
+          ...fallback.summary,
+          totalMentions: liveMentions.length,
+          summary: `X Recent Search aktif dengan hasil live terbatas. Social summary masih digabung dengan heuristik mock supaya aman dipakai walau tier/coverage X bisa berubah.`
+        }
+      };
+    } catch {
+      return buildFallbackSummary(fallback, "X API", "Request live error atau network tidak tersedia.", "limited_mock");
+    }
   }
 }
 
@@ -203,8 +336,8 @@ export function getSocialSearchProvider(params?: Pick<SocialSearchParams, "sourc
     return new XaiGrokSocialSearchProvider(source, env);
   }
 
-  if (env.configuredProvider === "x_api" && env.xBearerToken && source === "x") {
-    return new SourceMockProvider({ provider: "x_api", source, status: "limited_mock" });
+  if (env.configuredProvider === "x_api" && env.xBearerToken && (source === "x" || source === "combined_social" || source === "combined_all")) {
+    return new XApiSocialSearchProvider(source, env);
   }
 
   return buildMockProviderForSource(source);

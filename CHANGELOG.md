@@ -14,14 +14,16 @@
 - Watchlist and export APIs now use persistence service with Supabase-or-mock fallback.
 - Scanner now groups sources into `Marketplace`, `Social`, and `Combined`, while keeping marketplace filters and table flow alive.
 - Social providers now expose `source`, `status`, and `search(params)` with mock-first behavior for all social channels.
+- Social provider env wiring now reads `ENABLE_SOCIAL_SEARCH`, `SOCIAL_SEARCH_PROVIDER`, `XAI_API_KEY`, and `X_BEARER_TOKEN` safely with masked diagnostics only.
+- X Recent Search provider now attempts live official API calls when `SOCIAL_SEARCH_PROVIDER=x_api` and falls back to controlled mock summaries on auth, tier, rate limit, or network failure.
 
 ### Fixed
 - Dependency reinstall flow to recover from corrupted node_modules baseline issues.
 
 ### Known Gaps
 - Supabase env required for real persistence writes.
-- xAI/Grok provider is stub-only until official integration is implemented.
-- Social metrics are sampled/estimated mock signals for now, and no real external social APIs are called yet.
+- xAI/Grok provider is still a safe fallback stub until official integration is completed.
+- Social metrics remain sampled/estimated, and live X access still depends on env availability plus account tier/permissions.
 
 ## [0.1.3] - 2026-05-09
 ### Added

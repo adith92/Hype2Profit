@@ -16,6 +16,7 @@ Hype2Profit diarahkan sebagai **“TradingView for marketplace product research 
 - Core persistence mulai dibangun (session/item ingest + watchlist + export job layer).
 - Social Signal Engine masih mock-first (provider live belum aktif).
 - Source selection social sekarang sudah punya fondasi di scanner dan `/social/search` dengan grouped source dan mock scenarios per category.
+- Env wiring untuk social provider sudah aktif: `xai_grok` dan `x_api` bisa dibaca dari runtime, tapi keduanya tetap fallback aman ke mock kalau key, tier, atau network tidak siap.
 - Deployment readiness untuk Vercel sudah selesai dan production aktif di https://hype2profit.vercel.app.
 
 ## v0.1.3 - Deployment Readiness ✅ DONE
@@ -49,8 +50,10 @@ Hype2Profit diarahkan sebagai **“TradingView for marketplace product research 
 - Mock provider implementation: DONE
 - Source grouping (`Marketplace`, `Social`, `Combined`) in scanner/social search: DONE
 - Mock providers for `X`, `Facebook`, `Instagram`, `Threads`, `Gabungan Social`, `Gabungan Semua`: IN_PROGRESS
-- xAI/Grok live integration: PLANNED
-- Multi-provider public integrations (X API/manual import): PLANNED
+- xAI/Grok env wiring + safe fallback: DONE
+- xAI/Grok live result synthesis: PLANNED
+- X API Recent Search env wiring + controlled fallback: DONE
+- Multi-provider public integrations (manual import / richer parsing): PLANNED
 - Meta/Threads real provider implementation: PLANNED
 - Social signals UI integration into cockpit widgets: IN_PROGRESS
 
