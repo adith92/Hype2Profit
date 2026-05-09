@@ -10,6 +10,7 @@
     "test": "pnpm exec vitest run"
   },
   "dependencies": {
+    "@hype2profit/shared": "workspace:*",
     "@hype2profit/social-intelligence": "workspace:*"
   },
   "devDependencies": {

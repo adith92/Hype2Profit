@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
-import { Download, Eye, Plus, Search, X } from "lucide-react";
+import { Download, Eye, Plus, Radar, Search, Sparkles, X } from "lucide-react";
+import type { SocialSearchResult, SocialSource } from "@hype2profit/social-intelligence";
+import { SOCIAL_SOURCE_GROUPS } from "@hype2profit/social-intelligence";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,51 @@ import type { ProductRecord } from "@/lib/mock-service";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useUIStore } from "@/stores/ui-store";
+
+type MarketplaceSource = "shopee" | "tokopedia" | "tiktok_shop";
+type ScannerSource = MarketplaceSource | SocialSource;
+type SocialApiResponse = {
+  ok: boolean;
+  provider?: string;
+  source?: SocialSource;
+  status?: string;
+  data?: SocialSearchResult;
+  error?: string;
+};
+
+const MARKETPLACE_OPTIONS: Array<{ value: MarketplaceSource; label: string }> = [
+  { value: "shopee", label: "Shopee" },
+  { value: "tokopedia", label: "Tokopedia" },
+  { value: "tiktok_shop", label: "TikTok Shop" }
+];
+
+const CATEGORY_OPTIONS = ["Fashion", "Beauty", "Gadget", "Home"] as const;
+const DEFAULT_SOCIAL_KEYWORD_BY_CATEGORY: Record<(typeof CATEGORY_OPTIONS)[number], string> = {
+  Fashion: "Tas Padel",
+  Beauty: "Serum",
+  Gadget: "Case iPhone",
+  Home: "Rak Dapur"
+};
+
+function isSocialSource(source: ScannerSource): source is SocialSource {
+  return source === "x" || source === "facebook" || source === "instagram" || source === "threads" || source === "combined_social" || source === "combined_all";
+}
+
+function isMarketplaceSource(source: ScannerSource): source is MarketplaceSource {
+  return source === "shopee" || source === "tokopedia" || source === "tiktok_shop";
+}
+
+function sourceLabel(source: ScannerSource) {
+  if (source === "shopee") return "Shopee";
+  if (source === "tokopedia") return "Tokopedia";
+  if (source === "tiktok_shop") return "TikTok Shop";
+  if (source === "x") return "X";
+  if (source === "facebook") return "Facebook";
+  if (source === "instagram") return "Instagram";
+  if (source === "threads") return "Threads";
+  if (source === "combined_social") return "Gabungan Social";
+  return "Gabungan Semua";
+}
 
 export function ExportCsvButton() {
   return (
@@ -30,7 +77,8 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
   const { tableDensity, setTableDensity, setSelectedProductId, selectedProductId, setCommandPaletteOpen } = useUIStore();
   const [isPending, startTransition] = useTransition();
   const [keyword, setKeyword] = useState("");
-  const [platform, setPlatform] = useState<"all" | "shopee" | "tokopedia" | "tiktok_shop">("all");
+  const [source, setSource] = useState<ScannerSource>("shopee");
+  const [category, setCategory] = useState<(typeof CATEGORY_OPTIONS)[number]>("Fashion");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [minSales, setMinSales] = useState("");
@@ -38,12 +86,17 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
   const [minRating, setMinRating] = useState("");
   const [minStock, setMinStock] = useState("");
   const [signal, setSignal] = useState<"ALL" | "BUY_TEST" | "WATCH" | "AVOID">("ALL");
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [socialResult, setSocialResult] = useState<SocialApiResponse | null>(null);
+
+  const socialKeyword = keyword || DEFAULT_SOCIAL_KEYWORD_BY_CATEGORY[category];
+  const socialMode = isSocialSource(source);
 
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
         if (keyword && !row.title.toLowerCase().includes(keyword.toLowerCase())) return false;
-        if (platform !== "all" && row.platform !== platform) return false;
+        if (isMarketplaceSource(source) && row.platform !== source) return false;
         if (minPrice && row.price < Number(minPrice)) return false;
         if (maxPrice && row.price > Number(maxPrice)) return false;
         if (minSales && row.soldCount < Number(minSales)) return false;
@@ -53,8 +106,47 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
         if (signal !== "ALL" && row.trend.signal !== signal) return false;
         return true;
       }),
-    [rows, keyword, platform, minPrice, maxPrice, minSales, maxSales, minRating, minStock, signal]
+    [rows, keyword, source, minPrice, maxPrice, minSales, maxSales, minRating, minStock, signal]
   );
+
+  useEffect(() => {
+    if (!socialMode) {
+      setSocialResult(null);
+      return;
+    }
+
+    let cancelled = false;
+    setSocialLoading(true);
+
+    fetch("/api/social/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        category,
+        keyword: socialKeyword,
+        source
+      })
+    })
+      .then(async (response) => (await response.json()) as SocialApiResponse)
+      .then((payload) => {
+        if (!cancelled) setSocialResult(payload);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setSocialResult({
+            ok: false,
+            error: error instanceof Error ? error.message : "Failed to load social signal"
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSocialLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [category, socialKeyword, socialMode, source]);
 
   async function addToWatchlist(productId: string) {
     startTransition(async () => {
@@ -69,7 +161,8 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
 
   function resetFilters() {
     setKeyword("");
-    setPlatform("all");
+    setSource("shopee");
+    setCategory("Fashion");
     setMinPrice("");
     setMaxPrice("");
     setMinSales("");
@@ -77,23 +170,45 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
     setMinRating("");
     setMinStock("");
     setSignal("ALL");
+    setSocialResult(null);
   }
 
   return (
     <div className="space-y-6">
-      <Card className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <Input placeholder="Keyword produk..." value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+      <Card className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <Input placeholder={socialMode ? "Keyword social / product angle..." : "Keyword produk..."} value={keyword} onChange={(event) => setKeyword(event.target.value)} />
         <select
-          value={platform}
-          onChange={(event) => setPlatform(event.target.value as typeof platform)}
+          value={source}
+          onChange={(event) => setSource(event.target.value as ScannerSource)}
           className="h-11 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white"
         >
-          <option value="all">Shopee + Tokopedia</option>
-          <option value="shopee">Shopee</option>
-          <option value="tokopedia">Tokopedia</option>
-          <option value="tiktok_shop" disabled>
-            TikTok Shop (Phase 2 placeholder)
-          </option>
+          <optgroup label="Marketplace">
+            {MARKETPLACE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </optgroup>
+          {SOCIAL_SOURCE_GROUPS.map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        <select
+          value={category}
+          onChange={(event) => setCategory(event.target.value as (typeof CATEGORY_OPTIONS)[number])}
+          className="h-11 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white"
+        >
+          {CATEGORY_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
         </select>
         <div className="grid grid-cols-2 gap-3">
           <Input placeholder="Price min" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} />
@@ -121,9 +236,13 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs uppercase tracking-[0.3em] text-cyan">Scanner</div>
-          <h1 className="mt-2 text-3xl font-semibold">Riset produk seperti trader membaca market</h1>
-          <div className="mt-2 text-sm text-slate-400">{filteredRows.length} products matched current filter set</div>
-          <div className="mt-2 max-w-3xl text-sm text-slate-500">Fokus V1: Shopee dulu, Tokopedia kedua, TikTok Shop placeholder untuk Phase 2. Visible DOM only, no bypass.</div>
+          <h1 className="mt-2 text-3xl font-semibold">Product momentum, not just product list</h1>
+          <div className="mt-2 text-sm text-slate-400">
+            {socialMode ? `Mock social pulse aktif untuk ${sourceLabel(source)}. Keyword contoh otomatis: ${socialKeyword}.` : `${filteredRows.length} products matched current filter set`}
+          </div>
+          <div className="mt-2 max-w-3xl text-sm text-slate-500">
+            Source sekarang: {sourceLabel(source)}. Marketplace scanner tetap visible DOM only. Source social masih mock-first, belum ada real API call.
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] p-1 lg:flex">
@@ -151,12 +270,181 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
           <ExportCsvButton />
         </div>
       </div>
-      {filteredRows.length === 0 ? (
+
+      {socialMode ? (
+        <Card className="space-y-5 overflow-hidden border-cyan/20 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.14),_transparent_42%),linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.96))]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan/20 bg-cyan/10 px-3 py-1 text-xs uppercase tracking-[0.25em] text-cyan">
+                <Radar className="h-3.5 w-3.5" />
+                Social Signal Mode
+              </div>
+              <h2 className="mt-3 text-2xl font-semibold">Riset cepat untuk seller yang bergerak harian</h2>
+              <p className="mt-2 max-w-3xl text-sm text-slate-400">
+                Bukan sekadar tabel produk. Source social dipakai buat baca obrolan pasar lebih dulu, lalu baru kita cek apakah momentum itu layak dibawa ke watchlist atau export.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
+              <div>Source: {sourceLabel(source)}</div>
+              <div>Category: {category}</div>
+              <div>Keyword: {socialKeyword}</div>
+              <div>Status: {socialLoading ? "Loading mock pulse..." : socialResult?.status ?? "mock"}</div>
+            </div>
+          </div>
+
+          {socialLoading ? (
+            <div className="grid gap-4 md:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="h-28 animate-pulse rounded-3xl border border-white/10 bg-white/[0.04]" />
+              ))}
+            </div>
+          ) : null}
+
+          {socialResult?.ok && socialResult.data ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                {[
+                  { label: "Social Hype", value: socialResult.data.score.socialHypeScore, tone: "text-cyan" },
+                  { label: "Buyer Intent", value: socialResult.data.score.buyerIntentScore, tone: "text-emerald-300" },
+                  { label: "Saturation Risk", value: socialResult.data.score.saturationRisk, tone: "text-amber-300" },
+                  { label: "Controversy Risk", value: socialResult.data.score.controversyRisk, tone: "text-rose-300" },
+                  { label: "Signal", value: socialResult.data.score.finalSocialSignal, tone: "text-violet-300" }
+                ].map((item) => (
+                  <div key={item.label} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="text-xs uppercase tracking-[0.25em] text-slate-500">{item.label}</div>
+                    <div className={`mt-3 text-3xl font-semibold ${item.tone}`}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+                  <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-cyan">
+                    <Sparkles className="h-4 w-4" />
+                    Summary
+                  </div>
+                  <p className="mt-3 text-base leading-7 text-slate-200">{socialResult.data.summary.summary}</p>
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Top Hashtags</div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {socialResult.data.summary.topHashtags.map((hashtag) => (
+                          <span key={hashtag} className="rounded-full border border-cyan/20 bg-cyan/10 px-3 py-1 text-xs text-cyan">
+                            {hashtag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Related Keywords</div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {socialResult.data.summary.relatedKeywords.map((item) => (
+                          <span key={item} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-slate-200">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Buyer Intent Signals</div>
+                    <div className="mt-3 space-y-3 text-sm text-slate-200">
+                      {socialResult.data.summary.buyerIntentSignals.map((item) => (
+                        <div key={item} className="rounded-2xl border border-emerald-400/10 bg-emerald-400/5 px-4 py-3">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Risk Signals</div>
+                    <div className="mt-3 space-y-3 text-sm text-slate-200">
+                      {socialResult.data.summary.riskSignals.map((item) => (
+                        <div key={item} className="rounded-2xl border border-rose-400/10 bg-rose-400/5 px-4 py-3">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {socialResult.data.marketplaceContext ? (
+                <div className="rounded-3xl border border-violet-400/15 bg-violet-400/5 p-5">
+                  <div className="text-xs uppercase tracking-[0.2em] text-violet-200">Gabungan Semua Context</div>
+                  <div className="mt-4 grid gap-4 md:grid-cols-4">
+                    <div>
+                      <div className="text-xs text-slate-400">Matching products</div>
+                      <div className="mt-2 text-2xl font-semibold text-white">{socialResult.data.marketplaceContext.matchingProducts}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400">Avg price</div>
+                      <div className="mt-2 text-2xl font-semibold text-white">{formatCurrency(socialResult.data.marketplaceContext.averagePrice)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400">Avg hype</div>
+                      <div className="mt-2 text-2xl font-semibold text-white">{socialResult.data.marketplaceContext.averageHypeScore}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400">Top platform</div>
+                      <div className="mt-2 text-2xl font-semibold text-white">{socialResult.data.marketplaceContext.topPlatform}</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-sm text-slate-300">{socialResult.data.marketplaceContext.note}</div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {socialResult.data.marketplaceContext.topSignals.map((item) => (
+                      <span key={item} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-100">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Sample Mentions</div>
+                <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                  {socialResult.data.mentions.slice(0, 6).map((mention) => (
+                    <div key={mention.id} className="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-medium text-white">{mention.authorHandle ?? mention.platform}</div>
+                        <div className="rounded-full border border-white/10 px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                          {mention.platform}
+                        </div>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-slate-200">{mention.text}</p>
+                      <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
+                        <span>Intent: {mention.intent}</span>
+                        <span>Likes: {mention.likeCount ?? 0}</span>
+                        <span>Comments: {mention.commentCount ?? 0}</span>
+                        <span>Shares: {mention.shareCount ?? 0}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          {socialResult?.ok === false ? (
+            <EmptyState
+              title="Social mock pulse belum kebaca"
+              description={socialResult.error ?? "Coba ganti category atau keyword. Untuk sekarang semua source social masih mock-first dan tidak memanggil API eksternal."}
+            />
+          ) : null}
+        </Card>
+      ) : null}
+
+      {!socialMode && filteredRows.length === 0 ? (
         <EmptyState
           title="Scanner returned no matches"
           description="Broaden your price, sales, or signal filter to let more candidate products flow back into the table."
         />
       ) : null}
+
       <div className="overflow-x-auto rounded-3xl border border-white/10 bg-slate-950/60">
         <table className="min-w-[1400px] w-full text-sm">
           <thead className="bg-white/[0.04] text-slate-400">

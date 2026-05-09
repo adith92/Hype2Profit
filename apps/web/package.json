@@ -10,7 +10,7 @@
     "build": "next build --webpack",
     "lint": "eslint .",
     "typecheck": "rm -rf .next/types && tsc --project tsconfig.json --noEmit",
-    "test": "next build && playwright test"
+    "test": "pnpm build && playwright test"
   },
   "dependencies": {
     "@hype2profit/marketplace-adapters": "workspace:*",

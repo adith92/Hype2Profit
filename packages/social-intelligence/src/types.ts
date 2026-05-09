@@ -1,4 +1,7 @@
-export type SocialPlatform = "x" | "tiktok" | "instagram" | "youtube" | "google_trends" | "manual" | "mock";
+export type SocialPlatform = "x" | "facebook" | "instagram" | "threads" | "tiktok" | "youtube" | "google_trends" | "manual" | "mock";
+export type SocialSource = "x" | "facebook" | "instagram" | "threads" | "combined_social" | "combined_all";
+export type SocialProviderId = "mock" | "xai_grok" | "x_api" | "meta_instagram" | "meta_facebook" | "threads";
+export type SocialProviderStatus = "mock" | "limited_mock" | "planned";
 export type SocialTimeframe = "24h" | "7d" | "30d";
 export type FinalSocialSignal = "EXPLORE" | "WATCH" | "IGNORE" | "RISKY";
 
@@ -7,6 +10,7 @@ export interface SocialSearchParams {
   keyword: string;
   locale?: string;
   timeframe?: SocialTimeframe;
+  source?: SocialSource;
   platform?: SocialPlatform | "all";
 }
 
@@ -55,4 +59,35 @@ export interface SocialSearchResult {
   mentions: SocialMention[];
   summary: SocialSummary;
   score: SocialScore;
+  providerStatus?: SocialProviderStatus;
+  marketplaceContext?: {
+    matchingProducts: number;
+    averagePrice: number;
+    averageHypeScore: number;
+    topPlatform: "shopee" | "tokopedia" | "tiktok_shop" | "mixed";
+    topSignals: string[];
+    note: string;
+  };
 }
+
+export const SOCIAL_SOURCE_GROUPS = [
+  {
+    label: "Social",
+    options: [
+      { value: "x", label: "X" },
+      { value: "facebook", label: "Facebook" },
+      { value: "instagram", label: "Instagram" },
+      { value: "threads", label: "Threads" }
+    ]
+  },
+  {
+    label: "Combined",
+    options: [
+      { value: "combined_social", label: "Gabungan Social" },
+      { value: "combined_all", label: "Gabungan Semua" }
+    ]
+  }
+] as const satisfies ReadonlyArray<{
+  label: string;
+  options: ReadonlyArray<{ value: SocialSource; label: string }>;
+}>;

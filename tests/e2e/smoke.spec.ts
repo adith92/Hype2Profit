@@ -76,7 +76,7 @@ test("watchlist API add/remove behavior works", async ({ request }) => {
 
 test("scanner loads", async ({ page }) => {
   await page.goto("/scanner");
-  await expect(page.getByText("Riset produk seperti trader membaca market")).toBeVisible();
+  await expect(page.getByText("Product momentum, not just product list")).toBeVisible();
   await page.getByPlaceholder("Keyword produk...").fill("serum");
   await expect(page.getByText(/products matched current filter set/i)).toBeVisible();
 });
