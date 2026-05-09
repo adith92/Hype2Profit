@@ -9,6 +9,14 @@ export function getSupabaseServiceClient() {
   return getSupabaseServerClient();
 }
 
+type PersistSource = "supabase" | "mock";
+
+type PersistenceResult<T> = {
+  data: T;
+  source: PersistSource;
+  warning?: string;
+};
+
 type PersistPayload = {
   marketplace: string;
   url: string;
@@ -16,13 +24,17 @@ type PersistPayload = {
   products: Array<Record<string, unknown>>;
 };
 
+function isMissingColumnError(message?: string) {
+  return Boolean(message?.toLowerCase().includes("column") && message.toLowerCase().includes("does not exist"));
+}
+
 export async function persistExtensionScan(payload: PersistPayload) {
   if (!hasSupabaseServerEnv()) {
-    return { persisted: false, received: payload.products.length, sessionId: null, reason: "Supabase env missing" };
+    return { persisted: false, received: payload.products.length, sessionId: null, source: "mock" as const, reason: "Supabase env missing" };
   }
   const supabase = getSupabaseServiceClient();
   if (!supabase) {
-    return { persisted: false, received: payload.products.length, sessionId: null, reason: "Supabase client unavailable" };
+    return { persisted: false, received: payload.products.length, sessionId: null, source: "mock" as const, reason: "Supabase client unavailable" };
   }
   const { data: session, error } = await supabase
     .from("extension_scan_sessions")
@@ -36,10 +48,10 @@ export async function persistExtensionScan(payload: PersistPayload) {
     .select("id")
     .single();
   if (error || !session?.id) {
-    return { persisted: false, received: payload.products.length, sessionId: null, reason: error?.message ?? "insert failed" };
+    return { persisted: false, received: payload.products.length, sessionId: null, source: "mock" as const, reason: error?.message ?? "insert failed" };
   }
   if (payload.products.length) {
-    await supabase.from("extension_scan_items").insert(
+    const { error: itemsError } = await supabase.from("extension_scan_items").insert(
       payload.products.map((product) => ({
         scan_session_id: session.id,
         title: (product.title as string | undefined) ?? null,
@@ -53,24 +65,33 @@ export async function persistExtensionScan(payload: PersistPayload) {
         raw_item: product
       }))
     );
+    if (itemsError) {
+      return {
+        persisted: true,
+        received: payload.products.length,
+        sessionId: session.id,
+        source: "supabase" as const,
+        warning: `Scan session persisted, but item insert failed: ${itemsError.message}`
+      };
+    }
   }
-  return { persisted: true, received: payload.products.length, sessionId: session.id };
+  return { persisted: true, received: payload.products.length, sessionId: session.id, source: "supabase" as const };
 }
 
-export async function getWatchlistItems() {
-  if (!hasSupabaseServerEnv()) return ensureDemoWatchlistSeeded();
+export async function getWatchlistItems(): Promise<PersistenceResult<unknown[]>> {
+  if (!hasSupabaseServerEnv()) return { data: ensureDemoWatchlistSeeded(), source: "mock", warning: "Supabase env missing" };
   const supabase = getSupabaseServiceClient();
-  if (!supabase) return ensureDemoWatchlistSeeded();
+  if (!supabase) return { data: ensureDemoWatchlistSeeded(), source: "mock", warning: "Supabase client unavailable" };
   const { data, error } = await supabase.from("watchlist_items").select("*").order("created_at", { ascending: false });
-  if (error) return ensureDemoWatchlistSeeded();
-  return data ?? [];
+  if (error) return { data: ensureDemoWatchlistSeeded(), source: "mock", warning: error.message };
+  return { data: data ?? [], source: "supabase" };
 }
 
-export async function addWatchlistItem(input: Record<string, unknown>) {
+export async function addWatchlistItem(input: Record<string, unknown>): Promise<PersistenceResult<unknown>> {
   if (!hasSupabaseServerEnv()) {
     const productId = (input.productId as string | undefined) ?? "";
     if (!productId) throw new Error("productId is required in mock mode");
-    return addToWatchlist(productId, input.notes as string | undefined);
+    return { data: addToWatchlist(productId, input.notes as string | undefined), source: "mock", warning: "Supabase env missing" };
   }
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase client unavailable");
@@ -88,38 +109,44 @@ export async function addWatchlistItem(input: Record<string, unknown>) {
     .select("*")
     .single();
   if (error) throw new Error(error.message);
-  return data;
+  return { data, source: "supabase" };
 }
 
-export async function removeWatchlistItem(idOrProductId: string) {
-  if (!hasSupabaseServerEnv()) return removeFromWatchlist(idOrProductId);
+export async function removeWatchlistItem(idOrProductId: string): Promise<PersistenceResult<unknown>> {
+  if (!hasSupabaseServerEnv()) return { data: removeFromWatchlist(idOrProductId), source: "mock", warning: "Supabase env missing" };
   const supabase = getSupabaseServiceClient();
-  if (!supabase) return removeFromWatchlist(idOrProductId);
-  const { error } = await supabase.from("watchlist_items").delete().eq("id", idOrProductId);
+  if (!supabase) return { data: removeFromWatchlist(idOrProductId), source: "mock", warning: "Supabase client unavailable" };
+  const { error } = await supabase.from("watchlist_items").delete().or(`id.eq.${idOrProductId},product_id.eq.${idOrProductId}`);
   if (error) throw new Error(error.message);
-  return { id: idOrProductId };
+  return { data: { id: idOrProductId }, source: "supabase" };
 }
 
-export async function createPersistedExportJob(kind: string, metadata?: Record<string, unknown>) {
-  if (!hasSupabaseServerEnv()) return createExportJob(kind);
+export async function createPersistedExportJob(kind: string, metadata?: Record<string, unknown>): Promise<PersistenceResult<unknown>> {
+  if (!hasSupabaseServerEnv()) return { data: createExportJob(kind), source: "mock", warning: "Supabase env missing" };
   const supabase = getSupabaseServiceClient();
-  if (!supabase) return createExportJob(kind);
-  const { data, error } = await supabase
-    .from("export_jobs")
-    .insert({ kind, status: "completed", metadata: metadata ?? null })
-    .select("*")
-    .single();
-  if (error) return createExportJob(kind);
-  return data;
+  if (!supabase) return { data: createExportJob(kind), source: "mock", warning: "Supabase client unavailable" };
+
+  const insertPayload = { kind, status: "completed", metadata: metadata ?? null, completed_at: new Date().toISOString() };
+  const { data, error } = await supabase.from("export_jobs").insert(insertPayload).select("*").single();
+  if (!error) return { data, source: "supabase" };
+
+  // Older Supabase projects created export_jobs in the initial migration without metadata/completed_at compatibility.
+  // Keep exports usable while the additive migration is applied.
+  if (isMissingColumnError(error.message)) {
+    const { data: legacyData, error: legacyError } = await supabase.from("export_jobs").insert({ kind, status: "completed" }).select("*").single();
+    if (!legacyError) return { data: legacyData, source: "supabase", warning: "Legacy export_jobs schema detected. Apply 20260509_core_persistence_compat.sql." };
+  }
+
+  return { data: createExportJob(kind), source: "mock", warning: error.message };
 }
 
-export async function getPersistedExportJobs() {
-  if (!hasSupabaseServerEnv()) return getExportJobs();
+export async function getPersistedExportJobs(): Promise<PersistenceResult<unknown[]>> {
+  if (!hasSupabaseServerEnv()) return { data: getExportJobs(), source: "mock", warning: "Supabase env missing" };
   const supabase = getSupabaseServiceClient();
-  if (!supabase) return getExportJobs();
+  if (!supabase) return { data: getExportJobs(), source: "mock", warning: "Supabase client unavailable" };
   const { data, error } = await supabase.from("export_jobs").select("*").order("created_at", { ascending: false });
-  if (error) return getExportJobs();
-  return data ?? [];
+  if (error) return { data: getExportJobs(), source: "mock", warning: error.message };
+  return { data: data ?? [], source: "supabase" };
 }
 
 export { getWatchlistRecords };

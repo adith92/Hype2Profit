@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { addWatchlistItem, getWatchlistItems } from "@/lib/persistence";
 
 export async function GET() {
-  const data = await getWatchlistItems();
-  return NextResponse.json({ ok: true, data });
+  const result = await getWatchlistItems();
+  return NextResponse.json({
+    ok: true,
+    data: result.data,
+    source: result.source,
+    warning: result.warning
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -13,15 +18,20 @@ export async function POST(request: NextRequest) {
     title?: string;
     platform?: string;
     notes?: string;
-    priority?: "low" | "normal" | "high";
-    status?: "active" | "archived";
+    priority?: string;
+    status?: string;
   };
   if (!body.productId && !body.productUrl) {
     return NextResponse.json({ ok: false, error: "productId or productUrl is required" }, { status: 400 });
   }
   try {
-    const data = await addWatchlistItem(body as Record<string, unknown>);
-    return NextResponse.json({ ok: true, data });
+    const result = await addWatchlistItem(body as Record<string, unknown>);
+    return NextResponse.json({
+      ok: true,
+      data: result.data,
+      source: result.source,
+      warning: result.warning
+    });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Failed to add watchlist item" }, { status: 500 });
   }

@@ -13,7 +13,7 @@ Hype2Profit diarahkan sebagai **“TradingView for marketplace product research 
 ## Current Snapshot (2026-05-09)
 - Marketplace cockpit V1 sudah aktif dengan mock fallback.
 - Extension scanner visible-DOM sudah jalan (Shopee/Tokopedia/basic TikTok area).
-- Core persistence mulai dibangun (session/item ingest + watchlist + export job layer).
+- Core persistence sudah punya foundation + compatibility hardening untuk session/item ingest, watchlist, dan export job layer.
 - Social Signal Engine masih mock-first (provider live belum aktif).
 - Source selection social sekarang sudah punya fondasi di scanner dan `/social/search` dengan grouped source dan mock scenarios per category.
 - Deployment readiness untuk Vercel sudah selesai dan production aktif di https://hype2profit.vercel.app.
@@ -41,6 +41,9 @@ Hype2Profit diarahkan sebagai **“TradingView for marketplace product research 
 - Extension ingest session/item persistence: IN_PROGRESS
 - Watchlist persistent storage: IN_PROGRESS
 - Export jobs persistence: IN_PROGRESS
+- Legacy Supabase schema compatibility migration: DONE
+- API fallback visibility (`source`, `warning`): DONE
+- Partial persistence warning handling: DONE
 - RLS hardening and per-user access model: PLANNED
 
 ## v0.4.0 Social Signal Engine Plan
@@ -69,4 +72,4 @@ Konsep gabungan sinyal marketplace + social:
 - minus risk adjustments (marketplace risk + social controversy/saturation)
 
 ## Codex Continuation Prompt
-“Continue from docs/FUTURE_DEVELOPMENT.md. Finish v0.2.0 Core Persistence if not fully done. Then complete v0.4.0 Social Signal Engine by implementing the xAI/Grok provider only after checking official xAI docs and configuring XAI_API_KEY. Keep mock provider as default and update CHANGELOG.md.”
+“Continue from docs/FUTURE_DEVELOPMENT.md. Finish v0.2.0 Core Persistence by validating Supabase writes, then plan RLS/per-user access before private beta. Continue v0.4.0 Social Signal Engine only after checking official provider docs. Keep mock provider as default and update CHANGELOG.md.”
