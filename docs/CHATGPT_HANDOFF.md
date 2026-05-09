@@ -15,16 +15,16 @@ Gaya komunikasi yang disukai:
 - 🚀 Owner suka hasil yang terasa final, bukan demo setengah matang.
 - 🧯 Kalau ada bug production, prioritaskan recovery dulu sebelum fitur baru.
 
-## 🦾 OpenClaw Working Rule
+## 🦾 Codex Working Rule
 
-Untuk setup/debugging lokal, user ingin **OpenClaw** yang menjalankan pekerjaan teknis.
+Untuk setup/debugging lokal, owner sekarang ingin **Codex** yang jalanin pekerjaan teknis langsung.
 
 Jika perlu command shell:
 
-- Tulis sebagai instruksi untuk OpenClaw.
-- Jangan menyuruh user menjalankan command manual sendiri.
-- Minta OpenClaw baca file, backup file, ubah file, lalu validasi.
-- Setelah instruksi, minta user kirim balik output OpenClaw.
+- Kerjakan langsung di Codex.
+- Jangan lempar balik pekerjaan teknis ke user kalau tidak benar-benar mentok.
+- Validasi hasil penting setelah edit, build, test, atau deploy.
+- Tetap jangan commit secret atau print credential ke log.
 
 ## 🔐 Safety Rule
 
@@ -82,6 +82,8 @@ Sisa penting sebelum private beta:
 - RLS/per-user access model
 - Auth model
 - UI diagnostics ketika fallback aktif
+- Latest scan cockpit wiring di `/scanner`, `/dashboard`, dan `/settings`
+- Extension ingest auth wajib saat final mode
 
 ## 🧠 Social Signal Engine
 

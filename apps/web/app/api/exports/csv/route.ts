@@ -5,11 +5,11 @@ import { createPersistedExportJob } from "@/lib/persistence";
 export async function POST(request: NextRequest) {
   const kind = request.nextUrl.searchParams.get("kind") ?? "products";
   await createPersistedExportJob(kind);
-  return buildProductCsv(kind as "products" | "trending" | "watchlist" | "competitors").then((data) => NextResponse.json({ data }));
+  return buildProductCsv(kind as "products" | "trending" | "watchlist" | "competitors" | "latest_scan").then((data) => NextResponse.json({ data }));
 }
 
 export async function GET(request: NextRequest) {
-  const kind = (request.nextUrl.searchParams.get("kind") ?? "products") as "products" | "trending" | "watchlist" | "competitors";
+  const kind = (request.nextUrl.searchParams.get("kind") ?? "products") as "products" | "trending" | "watchlist" | "competitors" | "latest_scan";
   await createPersistedExportJob(kind);
   return buildProductCsv(kind).then(({ csv, fileName }) =>
     new NextResponse(csv, {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isExtensionAuthorized } from "@/lib/extension-auth";
 import { persistExtensionScan } from "@/lib/persistence";
 
 type IngestProduct = {
@@ -32,6 +33,10 @@ function isValidPayload(input: unknown): input is IngestPayload {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isExtensionAuthorized(request)) {
+    return NextResponse.json({ ok: false, error: "Unauthorized extension ingest" }, { status: 401 });
+  }
+
   const body = await request.json();
   if (!isValidPayload(body)) {
     return NextResponse.json({ ok: false, error: "Invalid payload shape" }, { status: 400 });
@@ -44,6 +49,9 @@ export async function POST(request: NextRequest) {
     persisted: persisted.persisted,
     sessionId: persisted.sessionId,
     received: body.products.length,
+    source: persisted.source,
+    reason: persisted.reason,
+    warning: persisted.warning,
     note: "Prototype ingest accepts visible DOM payloads only. All marketplace metrics are estimates and users must comply with platform Terms of Service."
   });
 }

@@ -1,7 +1,58 @@
+import { getLatestScan, type ScanItemRecord } from "./persistence";
 import { formatDate } from "./utils";
 import { analyzeStore, getProductRecords, getWatchlistRecords } from "./mock-service";
 
-export async function buildProductCsv(kind: "products" | "trending" | "watchlist" | "competitors" = "products") {
+function toCsv(rows: Array<Record<string, string | number>>) {
+  const headers = Object.keys(rows[0] ?? {}).join(",");
+  const body = rows
+    .map((row) =>
+      Object.values(row)
+        .map((value) => `"${String(value).replaceAll("\"", "\"\"")}"`)
+        .join(",")
+    )
+    .join("\n");
+
+  return `${headers}\n${body}`;
+}
+
+function mapLatestScanItemToRow(item: ScanItemRecord, marketplace: string, scannedAt: string) {
+  return {
+    marketplace,
+    title: item.title ?? "",
+    price_text: item.price_text ?? "",
+    sold_text: item.sold_text ?? "",
+    rating_text: item.rating_text ?? "",
+    shop_name: item.shop_name ?? "",
+    confidence_score: item.confidence_score ?? "",
+    product_url: item.product_url ?? "",
+    scanned_at: formatDate(scannedAt)
+  };
+}
+
+export async function buildProductCsv(kind: "products" | "trending" | "watchlist" | "competitors" | "latest_scan" = "products") {
+  if (kind === "latest_scan") {
+    const latestScan = await getLatestScan();
+    const session = latestScan.data.session;
+    const rows = latestScan.data.items.map((item) => mapLatestScanItemToRow(item, session?.marketplace ?? "unknown", session?.scanned_at ?? item.created_at));
+    const safeRows = rows.length
+      ? rows
+      : [
+          {
+            marketplace: session?.marketplace ?? "unknown",
+            title: "",
+            price_text: "",
+            sold_text: "",
+            rating_text: "",
+            shop_name: "",
+            confidence_score: "",
+            product_url: "",
+            scanned_at: formatDate(session?.scanned_at ?? new Date().toISOString())
+          }
+        ];
+
+    return { fileName: "hype2profit-latest-scan.csv", csv: toCsv(safeRows) };
+  }
+
   const rankedRecords = [...getProductRecords("all")].sort((a, b) => b.trend.finalScore - a.trend.finalScore);
   const records =
     kind === "trending"
@@ -56,14 +107,5 @@ export async function buildProductCsv(kind: "products" | "trending" | "watchlist
     captured_at: formatDate(record.latestSnapshot.capturedAt)
   }));
 
-  const headers = Object.keys(rows[0] ?? {}).join(",");
-  const body = rows
-    .map((row) =>
-      Object.values(row)
-        .map((value) => `"${String(value).replaceAll("\"", "\"\"")}"`)
-        .join(",")
-    )
-    .join("\n");
-
-  return { fileName: `hype2profit-${kind}.csv`, csv: `${headers}\n${body}` };
+  return { fileName: `hype2profit-${kind}.csv`, csv: toCsv(rows) };
 }

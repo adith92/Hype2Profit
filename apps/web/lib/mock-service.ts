@@ -13,7 +13,10 @@ import { calculateTrendCandles } from "@hype2profit/scoring-engine";
 export type ProductRecord = Product & { trend: TrendScore; latestSnapshot: ProductSnapshot };
 export type WatchlistRecord = ProductRecord & { notes?: string; watchedAt: string };
 
-const watchlist = new Map<string, { productId: string; notes?: string; createdAt: string }>();
+const watchlist = new Map<
+  string,
+  { productId: string; notes?: string; createdAt: string; title?: string; productUrl?: string; platform?: MarketplacePlatform | "all" }
+>();
 const exportJobs = new Map<string, { id: string; kind: string; status: "pending" | "completed" | "failed"; createdAt: string }>();
 let watchlistSeeded = false;
 
@@ -107,8 +110,21 @@ export async function analyzeStore(urlOrId: string, platform: MarketplacePlatfor
 
 export function getWatchlistRecords() {
   return Array.from(watchlist.values()).map((entry) => {
-    const record = getProductRecords("all").find((item) => item.id === entry.productId)!;
-    return { ...record, notes: entry.notes, watchedAt: entry.createdAt };
+    const record = getProductRecords("all").find((item) => item.id === entry.productId);
+    if (record) {
+      return { ...record, notes: entry.notes, watchedAt: entry.createdAt };
+    }
+
+    const fallbackRecord = getProductRecords("all")[0]!;
+    return {
+      ...fallbackRecord,
+      id: entry.productId,
+      title: entry.title ?? fallbackRecord.title,
+      url: entry.productUrl ?? fallbackRecord.url,
+      platform: entry.platform === "all" ? fallbackRecord.platform : entry.platform ?? fallbackRecord.platform,
+      notes: entry.notes,
+      watchedAt: entry.createdAt
+    };
   });
 }
 
@@ -123,6 +139,24 @@ export function ensureDemoWatchlistSeeded() {
 
 export function addToWatchlist(productId: string, notes?: string) {
   watchlist.set(productId, { productId, notes, createdAt: new Date().toISOString() });
+  return getWatchlistRecords();
+}
+
+export function addShadowWatchlistItem(input: {
+  productId: string;
+  notes?: string;
+  title?: string;
+  productUrl?: string;
+  platform?: MarketplacePlatform | "all";
+}) {
+  watchlist.set(input.productId, {
+    productId: input.productId,
+    notes: input.notes,
+    createdAt: new Date().toISOString(),
+    title: input.title,
+    productUrl: input.productUrl,
+    platform: input.platform
+  });
   return getWatchlistRecords();
 }
 

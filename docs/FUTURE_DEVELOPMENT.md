@@ -14,6 +14,7 @@ Hype2Profit diarahkan sebagai **“TradingView for marketplace product research 
 - Marketplace cockpit V1 sudah aktif dengan mock fallback.
 - Extension scanner visible-DOM sudah jalan (Shopee/Tokopedia/basic TikTok area).
 - Core persistence sudah punya foundation + compatibility hardening untuk session/item ingest, watchlist, dan export job layer.
+- Live scan cockpit foundation sudah aktif di codebase: scanner, dashboard banner, settings diagnostics, watchlist adapter, dan latest scan CSV.
 - Social Signal Engine masih mock-first (provider live belum aktif).
 - Source selection social sekarang sudah punya fondasi di scanner dan `/social/search` dengan grouped source dan mock scenarios per category.
 - Env wiring untuk social provider sudah aktif: `xai_grok` dan `x_api` bisa dibaca dari runtime, tapi keduanya tetap fallback aman ke mock kalau key, tier, atau network tidak siap.
@@ -42,6 +43,8 @@ Hype2Profit diarahkan sebagai **“TradingView for marketplace product research 
 - Extension ingest session/item persistence: IN_PROGRESS
 - Watchlist persistent storage: IN_PROGRESS
 - Export jobs persistence: IN_PROGRESS
+- Live scan read APIs + cockpit rendering: IN_PROGRESS
+- Final-mode extension ingest auth: DONE
 - Legacy Supabase schema compatibility migration: DONE
 - API fallback visibility (`source`, `warning`): DONE
 - Partial persistence warning handling: DONE

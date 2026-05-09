@@ -4,17 +4,22 @@
 ### Added
 - Core persistence foundation migration and service layer scaffold for extension scans, watchlist, and export jobs.
 - Extension ingest payload validation with persistence response (`persisted`, `sessionId`, `received`).
+- Extension ingest auth helper for final mode using pairing secret headers.
 - Social Signal Engine scaffold (`packages/social-intelligence`) with deterministic mock data and scoring.
 - Social adapters scaffold (`packages/social-adapters`) with mock provider default and xAI/Grok stub.
 - Social search API (`POST /api/social/search`) and UI skeleton (`/social/search`).
 - Social source selection foundation for scanner and social search: `X`, `Facebook`, `Instagram`, `Threads`, `Gabungan Social`, and `Gabungan Semua`.
 - Mock social scenarios for `Fashion + Tas Padel`, `Beauty + Serum`, `Gadget + Case iPhone`, and `Home + Rak Dapur`.
 - Core persistence compatibility migration for older Supabase projects that already had the initial `export_jobs` table.
+- Live scan read APIs: `/api/scans/sessions`, `/api/scans/latest`, dan `/api/scans/items`.
 
 ### Changed
 - Watchlist and export APIs now use persistence service with Supabase-or-mock fallback.
 - Watchlist and export API responses now expose `source` and `warning` so fallback state is visible to the UI/client.
 - Scanner now groups sources into `Marketplace`, `Social`, and `Combined`, while keeping marketplace filters and table flow alive.
+- Scanner cockpit now shows latest extension scan session, visible DOM scan items, watchlist action, dan CSV export untuk latest scan.
+- Dashboard dan settings sekarang nampilin live scan/runtime diagnostics dengan fallback label yang jujur.
+- Watchlist page sekarang bisa render item dari Supabase watchlist atau fallback shadow item hasil scan.
 - Social providers now expose `source`, `status`, and `search(params)` with mock-first behavior for all social channels.
 - Social provider env wiring now reads `ENABLE_SOCIAL_SEARCH`, `SOCIAL_SEARCH_PROVIDER`, `XAI_API_KEY`, and `X_BEARER_TOKEN` safely with masked diagnostics only.
 - X Recent Search provider now attempts live official API calls when `SOCIAL_SEARCH_PROVIDER=x_api` and falls back to controlled mock summaries on auth, tier, rate limit, or network failure.
@@ -23,6 +28,7 @@
 - Dependency reinstall flow to recover from corrupted node_modules baseline issues.
 - Hardened export job persistence for legacy Supabase schemas missing `metadata`, `file_url`, or `completed_at` columns.
 - Extension ingest now reports item insert warnings instead of silently hiding partial persistence failures.
+- Generated `tsconfig.tsbuildinfo` no longer stays tracked in Git.
 
 ### Known Gaps
 - Supabase env required for real persistence writes.
@@ -30,6 +36,7 @@
 - RLS/per-user access hardening is still planned before private beta.
 - xAI/Grok provider is still a safe fallback stub until official integration is completed.
 - Social metrics remain sampled/estimated, and live X access still depends on env availability plus account tier/permissions.
+- Production still needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` before runtime badge can switch to `Live mode`.
 
 ## [0.1.3] - 2026-05-09
 ### Added

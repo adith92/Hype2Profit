@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { BellRing, Eye, Flame, ShieldAlert, Star } from "lucide-react";
 import Link from "next/link";
 import type { ProductRecord } from "@/lib/mock-service";
+import type { LatestScanPayload } from "@/lib/persistence";
+import type { RuntimeModeStatus } from "@/lib/runtime-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -224,9 +226,13 @@ export function TopTrendingProducts({ items }: { items: ProductRecord[] }) {
 }
 
 export function DashboardView({
-  payload
+  payload,
+  latestScan,
+  runtime
 }: {
   payload: ReturnType<typeof import("@/lib/mock-service").getDashboardPayload>;
+  latestScan: { data: LatestScanPayload; source: "supabase" | "mock"; warning?: string };
+  runtime: RuntimeModeStatus;
 }) {
   const { tableDensity, setTableDensity } = useUIStore();
 
@@ -244,6 +250,12 @@ export function DashboardView({
             <PlatformFilter />
             <DateRangeFilter />
           </div>
+        </div>
+        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+          {latestScan.source === "supabase" && latestScan.data.session
+            ? `Live scan data connected. Session terbaru dari ${latestScan.data.session.marketplace} dengan ${latestScan.data.session.product_count} item siap dibaca dari cockpit.`
+            : "No live scans yet. Open extension on Shopee/Tokopedia and run scan. Dashboard tetap pakai fallback mock yang diberi label jujur."}
+          <span className="ml-2 text-xs text-slate-500">Mode: {runtime.label}</span>
         </div>
       </section>
 

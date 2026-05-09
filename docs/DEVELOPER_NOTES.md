@@ -13,6 +13,7 @@
 - Framework: Next.js (set di Vercel dashboard kalau perlu).
 - Env yang wajib untuk persistence real:
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`, `EXTENSION_PAIRING_SECRET`.
+- Runtime production tidak akan pindah ke `Live mode` sebelum tiga env Supabase di atas ada semua dan `ENABLE_MOCK_DATA=false`.
 - Env fallback aman:
 `ENABLE_MOCK_DATA=true`.
 - Social env opsional:
@@ -44,3 +45,16 @@
 `Beauty + Serum`
 `Gadget + Case iPhone`
 `Home + Rak Dapur`
+
+## Live Scan Notes
+- Final mode sekarang mewajibkan auth untuk `/api/extension/ingest`.
+- Header yang diterima:
+`Authorization: Bearer <EXTENSION_PAIRING_SECRET>`
+atau
+`x-hype2profit-extension-secret: <EXTENSION_PAIRING_SECRET>`
+- Demo mode masih boleh permissive untuk local dev.
+- API live scan yang sekarang tersedia:
+`/api/scans/sessions`
+`/api/scans/latest`
+`/api/scans/items`
+- `/scanner` sekarang punya panel `Latest Extension Scan` dan bisa add item ke watchlist + export latest scan CSV.

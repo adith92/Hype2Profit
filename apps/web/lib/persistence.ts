@@ -1,4 +1,4 @@
-import { ensureDemoWatchlistSeeded, addToWatchlist, createExportJob, getExportJobs, getWatchlistRecords, removeFromWatchlist } from "@/lib/mock-service";
+import { ensureDemoWatchlistSeeded, addShadowWatchlistItem, addToWatchlist, createExportJob, getExportJobs, getProductRecords, getWatchlistRecords, removeFromWatchlist } from "@/lib/mock-service";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 export function hasSupabaseServerEnv() {
@@ -22,6 +22,34 @@ type PersistPayload = {
   url: string;
   scannedAt: string;
   products: Array<Record<string, unknown>>;
+};
+
+export type ScanSessionRecord = {
+  id: string;
+  marketplace: string;
+  url: string;
+  scanned_at: string;
+  product_count: number;
+  created_at: string;
+};
+
+export type ScanItemRecord = {
+  id: string;
+  scan_session_id: string;
+  title: string | null;
+  price_text: string | null;
+  sold_text: string | null;
+  rating_text: string | null;
+  image_url: string | null;
+  shop_name: string | null;
+  product_url: string | null;
+  confidence_score: number | null;
+  created_at: string;
+};
+
+export type LatestScanPayload = {
+  session: ScanSessionRecord | null;
+  items: ScanItemRecord[];
 };
 
 function isMissingColumnError(message?: string) {
@@ -78,6 +106,168 @@ export async function persistExtensionScan(payload: PersistPayload) {
   return { persisted: true, received: payload.products.length, sessionId: session.id, source: "supabase" as const };
 }
 
+function getMockScanItems(): ScanItemRecord[] {
+  const fallback = ensureDemoWatchlistSeeded().slice(0, 6);
+  return fallback.map((item, index) => ({
+    id: `mock-scan-item-${index + 1}`,
+    scan_session_id: "mock-scan-session",
+    title: item.title,
+    price_text: `Rp${item.price.toLocaleString("id-ID")}`,
+    sold_text: `${item.soldCount} terjual`,
+    rating_text: item.rating.toFixed(1),
+    image_url: item.imageUrl,
+    shop_name: item.shopName,
+    product_url: item.url,
+    confidence_score: Number((0.84 + index * 0.02).toFixed(2)),
+    created_at: item.latestSnapshot.capturedAt
+  }));
+}
+
+function getMockLatestScanPayload(): LatestScanPayload {
+  return {
+    session: {
+      id: "mock-scan-session",
+      marketplace: "shopee",
+      url: "https://shopee.co.id/search?keyword=serum",
+      scanned_at: new Date().toISOString(),
+      product_count: getMockScanItems().length,
+      created_at: new Date().toISOString()
+    },
+    items: getMockScanItems()
+  };
+}
+
+export async function getScanSessions(limit = 20): Promise<PersistenceResult<ScanSessionRecord[]>> {
+  if (!hasSupabaseServerEnv()) {
+    return { data: [getMockLatestScanPayload().session!], source: "mock", warning: "Supabase env missing" };
+  }
+
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    return { data: [getMockLatestScanPayload().session!], source: "mock", warning: "Supabase client unavailable" };
+  }
+
+  const { data, error } = await supabase
+    .from("extension_scan_sessions")
+    .select("id, marketplace, url, scanned_at, product_count, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return { data: [getMockLatestScanPayload().session!], source: "mock", warning: error.message };
+  }
+
+  return { data: (data ?? []) as ScanSessionRecord[], source: "supabase" };
+}
+
+export async function getLatestScan(): Promise<PersistenceResult<LatestScanPayload>> {
+  if (!hasSupabaseServerEnv()) {
+    return { data: getMockLatestScanPayload(), source: "mock", warning: "Supabase env missing" };
+  }
+
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    return { data: getMockLatestScanPayload(), source: "mock", warning: "Supabase client unavailable" };
+  }
+
+  const { data: session, error: sessionError } = await supabase
+    .from("extension_scan_sessions")
+    .select("id, marketplace, url, scanned_at, product_count, created_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (sessionError) {
+    return { data: getMockLatestScanPayload(), source: "mock", warning: sessionError.message };
+  }
+
+  if (!session) {
+    return { data: { session: null, items: [] }, source: "supabase" };
+  }
+
+  const { data: items, error: itemsError } = await supabase
+    .from("extension_scan_items")
+    .select("id, scan_session_id, title, price_text, sold_text, rating_text, image_url, shop_name, product_url, confidence_score, created_at")
+    .eq("scan_session_id", session.id)
+    .order("created_at", { ascending: false });
+
+  if (itemsError) {
+    return {
+      data: {
+        session: session as ScanSessionRecord,
+        items: []
+      },
+      source: "supabase",
+      warning: itemsError.message
+    };
+  }
+
+  return {
+    data: {
+      session: session as ScanSessionRecord,
+      items: (items ?? []) as ScanItemRecord[]
+    },
+    source: "supabase"
+  };
+}
+
+export async function getScanItems(filters: {
+  marketplace?: string;
+  q?: string;
+  limit?: number;
+}): Promise<PersistenceResult<ScanItemRecord[]>> {
+  if (!hasSupabaseServerEnv()) {
+    const mock = getMockScanItems().filter((item) => {
+      const q = filters.q?.toLowerCase();
+      if (!q) return true;
+      return [item.title, item.shop_name, item.product_url].some((value) => value?.toLowerCase().includes(q));
+    });
+    return { data: mock.slice(0, filters.limit ?? 20), source: "mock", warning: "Supabase env missing" };
+  }
+
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) {
+    return { data: getMockScanItems().slice(0, filters.limit ?? 20), source: "mock", warning: "Supabase client unavailable" };
+  }
+
+  let query = supabase
+    .from("extension_scan_items")
+    .select("id, scan_session_id, title, price_text, sold_text, rating_text, image_url, shop_name, product_url, confidence_score, created_at")
+    .order("created_at", { ascending: false })
+    .limit(filters.limit ?? 20);
+
+  if (filters.marketplace) {
+    const { data: matchingSessions, error: sessionsError } = await supabase
+      .from("extension_scan_sessions")
+      .select("id")
+      .eq("marketplace", filters.marketplace)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (sessionsError) {
+      return { data: getMockScanItems().slice(0, filters.limit ?? 20), source: "mock", warning: sessionsError.message };
+    }
+
+    const ids = (matchingSessions ?? []).map((session) => session.id);
+    if (!ids.length) {
+      return { data: [], source: "supabase" };
+    }
+
+    query = query.in("scan_session_id", ids);
+  }
+
+  if (filters.q) {
+    query = query.or(`title.ilike.%${filters.q}%,shop_name.ilike.%${filters.q}%,product_url.ilike.%${filters.q}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    return { data: getMockScanItems().slice(0, filters.limit ?? 20), source: "mock", warning: error.message };
+  }
+
+  return { data: (data ?? []) as ScanItemRecord[], source: "supabase" };
+}
+
 export async function getWatchlistItems(): Promise<PersistenceResult<unknown[]>> {
   if (!hasSupabaseServerEnv()) return { data: ensureDemoWatchlistSeeded(), source: "mock", warning: "Supabase env missing" };
   const supabase = getSupabaseServiceClient();
@@ -91,7 +281,17 @@ export async function addWatchlistItem(input: Record<string, unknown>): Promise<
   if (!hasSupabaseServerEnv()) {
     const productId = (input.productId as string | undefined) ?? "";
     if (!productId) throw new Error("productId is required in mock mode");
-    return { data: addToWatchlist(productId, input.notes as string | undefined), source: "mock", warning: "Supabase env missing" };
+    const matchingRecord = getProductRecords("all").find((item) => item.id === productId);
+    const data = matchingRecord
+      ? addToWatchlist(productId, input.notes as string | undefined)
+      : addShadowWatchlistItem({
+          productId,
+          notes: input.notes as string | undefined,
+          title: input.title as string | undefined,
+          productUrl: input.productUrl as string | undefined,
+          platform: (input.platform as "shopee" | "tokopedia" | "tiktok_shop" | "all" | undefined) ?? "all"
+        });
+    return { data, source: "mock", warning: "Supabase env missing" };
   }
   const supabase = getSupabaseServiceClient();
   if (!supabase) throw new Error("Supabase client unavailable");

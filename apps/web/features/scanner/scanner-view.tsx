@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Download, Eye, Plus, Radar, Search, Sparkles, X } from "lucide-react";
 import type { SocialSearchResult, SocialSource } from "@hype2profit/social-intelligence";
 import { SOCIAL_SOURCE_GROUPS } from "@hype2profit/social-intelligence";
+import type { RuntimeModeStatus } from "@/lib/runtime-status";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MiniSparkline } from "@/components/charts/mini-sparkline";
 import { ProductSignalBadge } from "@/features/dashboard/components";
 import type { ProductRecord } from "@/lib/mock-service";
+import type { ScanItemRecord, ScanSessionRecord } from "@/lib/persistence";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useUIStore } from "@/stores/ui-store";
@@ -25,6 +27,15 @@ type SocialApiResponse = {
   status?: string;
   data?: SocialSearchResult;
   error?: string;
+};
+
+type LatestScanResult = {
+  data: {
+    session: ScanSessionRecord | null;
+    items: ScanItemRecord[];
+  };
+  source: "supabase" | "mock";
+  warning?: string;
 };
 
 const MARKETPLACE_OPTIONS: Array<{ value: MarketplaceSource; label: string }> = [
@@ -72,7 +83,7 @@ export function ExportCsvButton() {
   );
 }
 
-export function ScannerView({ rows }: { rows: ProductRecord[] }) {
+export function ScannerView({ rows, latestScan, runtime }: { rows: ProductRecord[]; latestScan: LatestScanResult; runtime: RuntimeModeStatus }) {
   const router = useRouter();
   const { tableDensity, setTableDensity, setSelectedProductId, selectedProductId, setCommandPaletteOpen } = useUIStore();
   const [isPending, startTransition] = useTransition();
@@ -154,6 +165,25 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, notes: "Added from scanner" })
+      });
+      router.refresh();
+    });
+  }
+
+  async function addScanItemToWatchlist(item: ScanItemRecord) {
+    startTransition(async () => {
+      await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: item.id,
+          productUrl: item.product_url,
+          title: item.title,
+          platform: latestScan.data.session?.marketplace ?? "shopee",
+          notes: "Added from latest extension scan",
+          priority: "medium",
+          status: "watching"
+        })
       });
       router.refresh();
     });
@@ -270,6 +300,95 @@ export function ScannerView({ rows }: { rows: ProductRecord[] }) {
           <ExportCsvButton />
         </div>
       </div>
+
+      <Card className="space-y-4 border-emerald/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.98))]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-[0.3em] text-emerald-300">Latest Extension Scan</div>
+            <h2 className="mt-2 text-2xl font-semibold">Visible DOM scan terbaru dari extension</h2>
+            <div className="mt-2 text-sm text-slate-400">
+              Runtime source: {latestScan.source === "supabase" ? "Live Supabase" : "Demo fallback"} · Mode: {runtime.label}
+            </div>
+            {latestScan.warning ? <div className="mt-2 text-xs text-amber-300">{latestScan.warning}</div> : null}
+          </div>
+          <div className="flex gap-3">
+            <a href="/api/exports/csv?kind=latest_scan">
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Export Latest Scan
+              </Button>
+            </a>
+          </div>
+        </div>
+
+        {latestScan.data.session ? (
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Marketplace</div>
+              <div className="mt-2 text-sm text-white">{latestScan.data.session.marketplace}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Scanned At</div>
+              <div className="mt-2 text-sm text-white">{formatDate(latestScan.data.session.scanned_at)}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Product Count</div>
+              <div className="mt-2 text-sm text-white">{latestScan.data.session.product_count}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Source URL</div>
+              <a href={latestScan.data.session.url} className="mt-2 line-clamp-2 text-sm text-cyan">
+                {latestScan.data.session.url}
+              </a>
+            </div>
+          </div>
+        ) : (
+          <EmptyState title="No live scan yet" description="Open extension on Shopee atau Tokopedia, jalankan scan, lalu hasil visible DOM akan muncul di sini." />
+        )}
+
+        {latestScan.data.items.length ? (
+          <div className="overflow-x-auto rounded-3xl border border-white/10 bg-slate-950/40">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-white/[0.04] text-slate-400">
+                <tr>
+                  {["Title", "Price", "Sold", "Rating", "Shop", "Confidence", "Link", "Action"].map((header) => (
+                    <th key={header} className="px-4 py-3 font-medium">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {latestScan.data.items.map((item) => (
+                  <tr key={item.id} className="border-t border-white/5 text-slate-200 transition hover:bg-emerald/5">
+                    <td className="px-4 py-3">{item.title ?? "-"}</td>
+                    <td className="px-4 py-3">{item.price_text ?? "-"}</td>
+                    <td className="px-4 py-3">{item.sold_text ?? "-"}</td>
+                    <td className="px-4 py-3">{item.rating_text ?? "-"}</td>
+                    <td className="px-4 py-3">{item.shop_name ?? "-"}</td>
+                    <td className="px-4 py-3">{item.confidence_score ? `${Math.round(item.confidence_score * 100)}%` : "-"}</td>
+                    <td className="px-4 py-3">
+                      {item.product_url ? (
+                        <a href={item.product_url} className="text-cyan">
+                          View
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Button variant="ghost" onClick={() => addScanItemToWatchlist(item)} disabled={isPending}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add to Watchlist
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </Card>
 
       {socialMode ? (
         <Card className="space-y-5 overflow-hidden border-cyan/20 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.14),_transparent_42%),linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.96))]">

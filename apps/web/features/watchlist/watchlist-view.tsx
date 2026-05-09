@@ -7,7 +7,6 @@ import type { ReturnTypeGetWatchlist } from "./watchlist-view.types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductSignalBadge } from "@/features/dashboard/components";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 export function WatchlistView({ items }: { items: ReturnTypeGetWatchlist }) {
@@ -46,13 +45,13 @@ export function WatchlistView({ items }: { items: ReturnTypeGetWatchlist }) {
                 <div className="text-lg font-semibold text-white">{item.title}</div>
                 <div className="mt-1 text-sm text-slate-400">{item.notes || "Belum ada catatan"}</div>
               </div>
-              <ProductSignalBadge signal={item.trend.signal} />
+              <ProductSignalBadge signal={item.signal} />
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-slate-300">
-              <div>Price: {formatCurrency(item.price)}</div>
-              <div>Sales: {item.soldCount}</div>
-              <div>Rating: {item.rating.toFixed(1)}</div>
-              <div>Captured: {formatDate(item.latestSnapshot.capturedAt)}</div>
+              <div>Price: {item.priceLabel}</div>
+              <div>Sales: {item.salesLabel}</div>
+              <div>Rating: {item.ratingLabel}</div>
+              <div>Captured: {item.capturedAtLabel}</div>
             </div>
             <div className="mt-4 flex justify-end">
               <Button variant="ghost" onClick={() => removeItem(item.id)} disabled={isPending}>
